@@ -21,7 +21,7 @@ export default function SiteHeader({ onAction }: SiteHeaderProps) {
       </Link>
       <nav className={menuOpen ? 'nav-links open' : 'nav-links'} aria-label="Main navigation">
         <Link to="/#flights" onClick={closeMenu}>Flights</Link>
-        <Link to="/#inspiration" onClick={closeMenu}>Explore</Link>
+        <Link to="/explore" onClick={closeMenu}>Explore</Link>
         <button type="button" onClick={() => { closeMenu(); onAction?.('Price alerts will be available in a later release.'); }}>Price alerts</button>
       </nav>
       <div className="header-actions">
