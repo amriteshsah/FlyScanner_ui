@@ -64,6 +64,7 @@ export default function LoginPage() {
             {error && <p className="auth-error" role="alert">{error}</p>}
             <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button>
           </form>
+          <div className="auth-forgot-link"><Link to="/forgot-password">Forgot password?</Link></div>
           <div className="demo-credentials">
             <strong>Demo account</strong>
             <span>demo@flyscanner.test</span>
