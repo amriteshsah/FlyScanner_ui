@@ -52,6 +52,7 @@ export default function ExplorePage() {
   const [calendarData, setCalendarData] = useState<PriceCalendarMonth[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [notice, setNotice] = useState('');
   const [selectedRoute, setSelectedRoute] = useState('BLR-DXB');
   const [selectedMonth, setSelectedMonth] = useState('2027-01');
@@ -61,18 +62,45 @@ export default function ExplorePage() {
     const controller = new AbortController();
     let active = true;
 
-    Promise.all([
+    setLoading(true);
+    setError('');
+
+    Promise.allSettled([
       getDestinationCatalog(controller.signal),
       getPopularRoutes(controller.signal),
       getPriceCalendarCatalog(controller.signal),
-    ]).then(([destinationData, routeData, calendar]) => {
+    ]).then(([destinationResult, routeResult, calendarResult]) => {
       if (!active) return;
-      setDestinations(destinationData);
-      setRoutes(routeData);
-      setCalendarData(calendar);
+
+      const failures: string[] = [];
+
+      if (destinationResult.status === 'fulfilled') {
+        setDestinations(destinationResult.value);
+      } else {
+        setDestinations([]);
+        failures.push('destinations');
+      }
+
+      if (routeResult.status === 'fulfilled') {
+        setRoutes(routeResult.value);
+      } else {
+        setRoutes([]);
+        failures.push('popular routes');
+      }
+
+      if (calendarResult.status === 'fulfilled') {
+        setCalendarData(calendarResult.value);
+      } else {
+        setCalendarData([]);
+        failures.push('price calendar');
+      }
+
+      if (failures.length) {
+        setError('Some Explore content could not be loaded (' + failures.join(', ') + '). Please retry. Other available sections remain usable.');
+      }
     }).catch((reason: unknown) => {
       if (active && !(reason instanceof Error && reason.name === 'AbortError')) {
-        setError('We could not load the Explore demo datasets. Please refresh and try again.');
+        setError('Explore content could not be loaded. Please check your connection and retry.');
       }
     }).finally(() => {
       if (active) setLoading(false);
@@ -82,7 +110,7 @@ export default function ExplorePage() {
       active = false;
       controller.abort();
     };
-  }, []);
+  }, [reloadKey]);
 
   const currentCalendar = useMemo(
     () => calendarData.find((item) => item.route === selectedRoute && item.month === selectedMonth),
@@ -133,7 +161,12 @@ export default function ExplorePage() {
           </div>
         </section>
 
-        {error && <div className="empty-state" role="alert">{error}</div>}
+        {error && (
+          <div className="explore-load-error" role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry loading Explore</button>
+          </div>
+        )}
 
         <section className="explore-section" id="destinations">
           <div className="explore-section-heading">
