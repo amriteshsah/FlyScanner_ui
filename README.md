@@ -45,3 +45,21 @@ The search form fetches these files through the typed mock API adapter, simulate
 IMPORTANT: This is fictional test data. It does not represent live airline inventory, guaranteed prices, bookable seats or genuine booking links. Never use it to make a real travel purchase.
 
 When the Spring Boot backend is ready, replace the implementation in mockFlightApi.ts with HTTP calls to the backend while retaining the response contracts. Never expose supplier credentials in frontend environment variables.
+
+
+## Responsive search, results and details
+
+- Home search uses airport autocomplete and shareable URL query parameters.
+- Search results are available at \`/flights/search\`.
+- A sample offer detail is available at \`/flights/:offerId\`.
+- Mobile layouts include collapsible filters, touch-sized controls, safe-area padding, and a sticky provider action on the detail page.
+- The Playwright projects cover Desktop Chromium, Pixel 7 (Android Chrome emulation), and iPhone 13 (WebKit / iOS Safari emulation).
+
+Run browser tests locally:
+
+\`\`\`bash
+npx playwright install chromium webkit
+npm run test:e2e
+\`\`\`
+
+The iPhone project exercises Playwright's WebKit engine with an iPhone device profile. It is a useful compatibility check, but it is not a substitute for final testing on physical iOS Safari and Android Chrome devices.
