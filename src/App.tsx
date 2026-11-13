@@ -1,8 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
-  ArrowDownUp, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
-  Globe2, Heart, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
+  ArrowDownUp, ArrowRight, ArrowUpRight, CalendarDays, Check, ChevronDown,
+  Globe2, Heart, Plane, Search, ShieldCheck, SlidersHorizontal,
   Sparkles, Users, X,
 } from 'lucide-react';
 import {
@@ -14,6 +14,8 @@ import {
 } from './features/flight-search/services/mockFlightApi';
 import AirportAutocomplete from './features/flight-search/components/AirportAutocomplete';
 import { createFlightSearchQuery } from './features/flight-search/utils/searchQuery';
+import SiteHeader from './components/layout/SiteHeader';
+import { getSavedFlights, toggleSavedFlight } from './features/account/services/mockAccountStore';
 
 type TripType = 'Round trip' | 'One way';
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
@@ -46,7 +48,6 @@ function App() {
   const [travellers, setTravellers] = useState(1);
   const [cabin, setCabin] = useState<CabinClass>('ECONOMY');
   const [travellerMenuOpen, setTravellerMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [searchResults, setSearchResults] = useState<FlightResult[]>([]);
   const [formError, setFormError] = useState('');
@@ -56,7 +57,7 @@ function App() {
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [maxFare, setMaxFare] = useState(50000);
-  const [savedFlights, setSavedFlights] = useState<number[]>([]);
+  const [savedFlights, setSavedFlights] = useState<number[]>(() => getSavedFlights().map((flight) => flight.id));
 
   useEffect(() => {
     let active = true;
@@ -156,9 +157,11 @@ function App() {
   }
 
   function toggleSaved(id: number) {
-    setSavedFlights((current) => current.includes(id)
-      ? current.filter((item) => item !== id)
-      : [...current, id]);
+    const flight = searchResults.find((item) => item.id === id);
+    if (!flight) return;
+    const updated = toggleSavedFlight(flight);
+    setSavedFlights(updated.map((item) => item.id));
+    showNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
   }
 
   function showNotice(message: string) {
@@ -167,22 +170,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#" aria-label="FlyScanner home">
-          <span className="brand-mark"><Plane size={19} fill="currentColor" /></span>
-          <span>fly<span>scanner</span></span>
-        </a>
-        <nav className={mobileMenuOpen ? 'nav-links open' : 'nav-links'} aria-label="Main navigation">
-          <a className="active" href="#flights" onClick={() => setMobileMenuOpen(false)}>Flights</a>
-          <a href="#inspiration" onClick={() => setMobileMenuOpen(false)}>Explore</a>
-          <a href="#alerts" onClick={() => { setMobileMenuOpen(false); showNotice('Price alerts will be available in a later release.'); }}>Price alerts</a>
-        </nav>
-        <div className="header-actions">
-          <button className="icon-button notification" aria-label="Notifications" onClick={() => showNotice('Notifications will be available when user accounts are connected.')}><Bell size={18} /><i /></button>
-          <button className="signin" onClick={() => showNotice('Sign-in will be connected when authentication is implemented.')}>Sign in <ArrowUpRight size={15} /></button>
-          <button className="menu-toggle" onClick={() => setMobileMenuOpen((value) => !value)} aria-label="Toggle menu">{mobileMenuOpen ? <X /> : <Menu />}</button>
-        </div>
-      </header>
+      <SiteHeader onAction={showNotice} />
 
       <main>
         <section className="hero">
