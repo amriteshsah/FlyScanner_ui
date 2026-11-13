@@ -88,3 +88,11 @@ test('Explore layout does not create horizontal overflow on mobile', async ({ pa
   expect(overflow).toBe(false);
   await expect(page.getByRole('heading', { name: 'Places to take you places.' })).toBeVisible();
 });
+
+
+test('price calendar changes month and renders the correct day count', async ({ page }) => {
+  await page.goto('/explore');
+  await page.getByRole('combobox', { name: 'Month' }).selectOption('2027-02');
+  await expect(page.getByTestId('calendar-day')).toHaveCount(28);
+  await expect(page.getByRole('button', { name: /February 2027 14, sample fare/i })).toBeVisible();
+});
