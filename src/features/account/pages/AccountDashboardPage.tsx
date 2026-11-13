@@ -39,30 +39,12 @@ const money = (value: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency', currency: 'INR', maximumFractionDigits: 0,
 }).format(value);
 
-function dateAfter(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
-}
-
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
 }
 
 function routeName(code: string) {
   return AIRPORT_OPTIONS.find((airport) => airport.code === code)?.city ?? code;
-}
-
-function searchUrl(from: string, to: string) {
-  const query = new URLSearchParams({
-    from,
-    to,
-    departure: dateAfter(14),
-    adults: '1',
-    cabin: 'ECONOMY',
-    trip: 'ONE_WAY',
-  });
-  return '/flights/search?' + query.toString();
 }
 
 export default function AccountDashboardPage() {
