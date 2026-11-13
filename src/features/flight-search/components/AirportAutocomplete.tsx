@@ -86,6 +86,7 @@ export default function AirportAutocomplete({
               aria-selected={index === activeIndex}
               key={airport.code}
               onMouseDown={(event) => event.preventDefault()}
+              onTouchStart={(event) => event.preventDefault()}
               onClick={() => choose(airport)}
             >
               <span className="airport-option-icon"><MapPin size={16} /></span>
