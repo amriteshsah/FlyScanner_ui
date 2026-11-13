@@ -1,48 +1,37 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownUp, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
   Globe2, Heart, MapPin, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
-  Sparkles, Users, X
+  Sparkles, Users, X,
 } from 'lucide-react';
+import {
+  type Airport,
+  type FlightResult,
+  getAirportCatalog,
+  getFeaturedFlights,
+  resolveAirportCode,
+  searchFlightOffers,
+} from './features/flight-search/services/mockFlightApi';
 
 type TripType = 'Round trip' | 'One way';
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
-type Flight = {
-  id: number;
-  airline: string;
-  code: string;
-  from: string;
-  to: string;
-  depart: string;
-  arrive: string;
-  duration: string;
-  stops: number;
-  stopDetail?: string;
-  price: number;
-  label?: string;
-};
+const PERIODS = ['Morning', 'Afternoon', 'Evening', 'Night'] as const;
+const CABIN_OPTIONS = [
+  { label: 'Economy', value: 'ECONOMY' },
+  { label: 'Premium economy', value: 'PREMIUM_ECONOMY' },
+  { label: 'Business', value: 'BUSINESS' },
+  { label: 'First class', value: 'FIRST' },
+] as const;
+type CabinClass = typeof CABIN_OPTIONS[number]['value'];
 
-const DEMO_FLIGHTS: Flight[] = [
-  { id: 1, airline: 'IndiGo', code: '6E 1421', from: 'BLR', to: 'DXB', depart: '06:20', arrive: '09:10', duration: '4h 20m', stops: 0, price: 12480, label: 'Best price' },
-  { id: 2, airline: 'Air India Express', code: 'IX 839', from: 'BLR', to: 'DXB', depart: '08:45', arrive: '11:35', duration: '4h 20m', stops: 0, price: 13890 },
-  { id: 3, airline: 'Emirates', code: 'EK 569', from: 'BLR', to: 'DXB', depart: '04:30', arrive: '07:15', duration: '4h 15m', stops: 0, price: 22450, label: 'Top airline' },
-  { id: 4, airline: 'Air India', code: 'AI 808', from: 'BLR', to: 'DXB', depart: '21:10', arrive: '06:45', duration: '9h 05m', stops: 1, stopDetail: 'Mumbai · 2h 05m layover', price: 15920 },
-];
-
-const AIRLINES = ['IndiGo', 'Air India Express', 'Emirates', 'Air India'];
-const PERIODS = ['Morning', 'Afternoon', 'Evening', 'Night'];
-const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+const money = (value: number) => new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+}).format(value);
 
 function dateAfter(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
-}
-
-function durationMinutes(value: string) {
-  const hours = Number(value.match(/(\d+)h/)?.[1] ?? 0);
-  const minutes = Number(value.match(/(\d+)m/)?.[1] ?? 0);
-  return hours * 60 + minutes;
 }
 
 function App() {
@@ -52,9 +41,12 @@ function App() {
   const [departureDate, setDepartureDate] = useState(dateAfter(14));
   const [returnDate, setReturnDate] = useState(dateAfter(20));
   const [travellers, setTravellers] = useState(1);
-  const [cabin, setCabin] = useState('Economy');
+  const [cabin, setCabin] = useState<CabinClass>('ECONOMY');
   const [travellerMenuOpen, setTravellerMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [airports, setAirports] = useState<Airport[]>([]);
+  const [searchResults, setSearchResults] = useState<FlightResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
@@ -62,11 +54,30 @@ function App() {
   const [nonstopOnly, setNonstopOnly] = useState(false);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
-  const [maxFare, setMaxFare] = useState(30000);
+  const [maxFare, setMaxFare] = useState(50000);
   const [savedFlights, setSavedFlights] = useState<number[]>([]);
 
+  useEffect(() => {
+    let active = true;
+    Promise.all([getAirportCatalog(), getFeaturedFlights()])
+      .then(([airportData, featuredFlights]) => {
+        if (!active) return;
+        setAirports(airportData);
+        setSearchResults(featuredFlights);
+      })
+      .catch(() => {
+        if (active) setNotice('Could not load the local demo data. Please refresh the page.');
+      });
+    return () => { active = false; };
+  }, []);
+
+  const airlineNames = useMemo(
+    () => [...new Set(searchResults.map((flight) => flight.airline))].sort(),
+    [searchResults],
+  );
+
   const results = useMemo(() => {
-    const filtered = DEMO_FLIGHTS.filter((flight) => {
+    const filtered = searchResults.filter((flight) => {
       const hour = Number(flight.depart.slice(0, 2));
       const periodMatch = selectedPeriods.length === 0 || selectedPeriods.some((period) => {
         if (period === 'Morning') return hour >= 5 && hour < 12;
@@ -79,15 +90,71 @@ function App() {
         && flight.price <= maxFare
         && periodMatch;
     });
-
     if (sort === 'Cheapest') filtered.sort((a, b) => a.price - b.price);
-    if (sort === 'Fastest') filtered.sort((a, b) => durationMinutes(a.duration) - durationMinutes(b.duration));
+    if (sort === 'Fastest') filtered.sort((a, b) => a.durationMinutes - b.durationMinutes);
     return filtered;
-  }, [nonstopOnly, selectedAirlines, selectedPeriods, maxFare, sort]);
+  }, [searchResults, nonstopOnly, selectedAirlines, selectedPeriods, maxFare, sort]);
+
+  function resetFilters() {
+    setNonstopOnly(false);
+    setSelectedAirlines([]);
+    setSelectedPeriods([]);
+    setMaxFare(50000);
+    setSort('Recommended');
+  }
 
   function swapAirports() {
     setOrigin(destination);
     setDestination(origin);
+  }
+
+  async function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const originCode = resolveAirportCode(origin, airports);
+    const destinationCode = resolveAirportCode(destination, airports);
+
+    if (!originCode || !destinationCode) {
+      setFormError('Choose a valid city or airport from the suggestions.');
+      return;
+    }
+    if (originCode === destinationCode) {
+      setFormError('Choose two different airports for your journey.');
+      return;
+    }
+    if (!departureDate || departureDate < dateAfter(0)) {
+      setFormError('Choose a valid departure date.');
+      return;
+    }
+    if (trip === 'Round trip' && (!returnDate || returnDate < departureDate)) {
+      setFormError('Return date must be on or after your departure date.');
+      return;
+    }
+
+    setFormError('');
+    setNotice('');
+    setIsSearching(true);
+    setSearched(true);
+    resetFilters();
+
+    try {
+      const offers = await searchFlightOffers({
+        originCode,
+        destinationCode,
+        departureDate,
+        returnDate: trip === 'Round trip' ? returnDate : undefined,
+        adults: travellers,
+        cabinClass: cabin,
+      });
+      setSearchResults(offers);
+      setNotice(offers.length
+        ? offers.length + ' sample flight option(s) found. Data is simulated from local JSON files.'
+        : 'No sample flights were found for this route, date and cabin class. Try another search.');
+      document.getElementById('flights')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {
+      setFormError('The sample flight search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   }
 
   function toggleAirline(airline: string) {
@@ -102,33 +169,14 @@ function App() {
       : [...current, period]);
   }
 
-  function resetFilters() {
-    setNonstopOnly(false);
-    setSelectedAirlines([]);
-    setSelectedPeriods([]);
-    setMaxFare(30000);
-    setSort('Recommended');
-  }
-
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!origin.trim() || !destination.trim()) {
-      setFormError('Enter both a departure and destination city.');
-      return;
-    }
-    if (origin.trim().toLowerCase() === destination.trim().toLowerCase()) {
-      setFormError('Choose two different cities for your journey.');
-      return;
-    }
-    setFormError('');
-    setSearched(true);
-    setNotice('Demo experience: displayed fares are sample data, not live supplier prices.');
-  }
-
   function toggleSaved(id: number) {
     setSavedFlights((current) => current.includes(id)
       ? current.filter((item) => item !== id)
       : [...current, id]);
+  }
+
+  function showNotice(message: string) {
+    setNotice(message);
   }
 
   return (
@@ -141,11 +189,11 @@ function App() {
         <nav className={mobileMenuOpen ? 'nav-links open' : 'nav-links'} aria-label="Main navigation">
           <a className="active" href="#flights" onClick={() => setMobileMenuOpen(false)}>Flights</a>
           <a href="#inspiration" onClick={() => setMobileMenuOpen(false)}>Explore</a>
-          <a href="#alerts" onClick={() => { setMobileMenuOpen(false); setNotice('Price alerts will be available in a later release.'); }}>Price alerts</a>
+          <a href="#alerts" onClick={() => { setMobileMenuOpen(false); showNotice('Price alerts will be available in a later release.'); }}>Price alerts</a>
         </nav>
         <div className="header-actions">
-          <button className="icon-button notification" aria-label="Notifications" onClick={() => setNotice('Notifications will be available when user accounts are connected.')}><Bell size={18} /><i /></button>
-          <button className="signin" onClick={() => setNotice('Sign-in will be connected when the authentication service is ready.')}>Sign in <ArrowUpRight size={15} /></button>
+          <button className="icon-button notification" aria-label="Notifications" onClick={() => showNotice('Notifications will be available when user accounts are connected.')}><Bell size={18} /><i /></button>
+          <button className="signin" onClick={() => showNotice('Sign-in will be connected when authentication is implemented.')}>Sign in <ArrowUpRight size={15} /></button>
           <button className="menu-toggle" onClick={() => setMobileMenuOpen((value) => !value)} aria-label="Toggle menu">{mobileMenuOpen ? <X /> : <Menu />}</button>
         </div>
       </header>
@@ -162,11 +210,8 @@ function App() {
             </div>
           </div>
           <div className="hero-art" aria-label="Decorative illustration of a plane travelling through the sky" role="img">
-            <div className="sun-glow" />
-            <div className="route route-one" />
-            <div className="route route-two" />
-            <div className="cloud cloud-one" />
-            <div className="cloud cloud-two" />
+            <div className="sun-glow" /><div className="route route-one" /><div className="route route-two" />
+            <div className="cloud cloud-one" /><div className="cloud cloud-two" />
             <div className="flight-stamp"><span>YOUR WORLD</span><strong>IS WAITING</strong><small>✦ DISCOVER MORE</small></div>
             <div className="plane-illustration"><Plane size={72} strokeWidth={1.2} /></div>
             <div className="art-caption"><span>01 — THE JOURNEY</span><span>MADE FOR YOU</span></div>
@@ -180,30 +225,23 @@ function App() {
                 <button key={item} type="button" onClick={() => setTrip(item)} className={trip === item ? 'selected' : ''} aria-pressed={trip === item}>{item}</button>
               ))}
             </div>
-            <div className="search-note"><span className="live-dot" /> Compare travel options in one place</div>
+            <div className="search-note"><span className="live-dot" /> Local demo API · simulated flight data</div>
           </div>
 
           <form className="search-grid" onSubmit={submitSearch}>
             <label className="field airport-field">
               <span>FROM</span>
-              <div><MapPin size={17} /><input aria-label="Departure city or airport" list="airport-options" value={origin} onChange={(event) => setOrigin(event.target.value)} /></div>
+              <div><MapPin size={17} /><input aria-label="Departure city or airport" list="airport-options" value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Choose origin" /></div>
               <small>Departure city or airport</small>
             </label>
             <button type="button" className="swap-button" onClick={swapAirports} aria-label="Swap departure and destination"><ArrowDownUp size={17} /></button>
             <label className="field airport-field">
               <span>TO</span>
-              <div><MapPin size={17} /><input aria-label="Destination city or airport" list="airport-options" value={destination} onChange={(event) => setDestination(event.target.value)} /></div>
+              <div><MapPin size={17} /><input aria-label="Destination city or airport" list="airport-options" value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Choose destination" /></div>
               <small>Where would you like to go?</small>
             </label>
             <datalist id="airport-options">
-              <option value="Bengaluru (BLR)" />
-              <option value="New Delhi (DEL)" />
-              <option value="Mumbai (BOM)" />
-              <option value="Hyderabad (HYD)" />
-              <option value="Chennai (MAA)" />
-              <option value="Dubai (DXB)" />
-              <option value="Singapore (SIN)" />
-              <option value="London (LHR)" />
+              {airports.map((airport) => <option key={airport.code} value={airport.city + ' (' + airport.code + ')'} />)}
             </datalist>
             <label className="field date-field">
               <span>DEPARTURE</span>
@@ -221,7 +259,7 @@ function App() {
               <button type="button" className="field traveller-field" onClick={() => setTravellerMenuOpen((value) => !value)} aria-expanded={travellerMenuOpen}>
                 <span>TRAVELLERS & CLASS</span>
                 <div><Users size={17} /><strong>{travellers} {travellers === 1 ? 'traveller' : 'travellers'}</strong><ChevronDown size={15} /></div>
-                <small>{cabin}</small>
+                <small>{CABIN_OPTIONS.find((option) => option.value === cabin)?.label}</small>
               </button>
               {travellerMenuOpen && (
                 <div className="traveller-popover">
@@ -235,17 +273,21 @@ function App() {
                   </div>
                   <label>Cabin class
                     <select value={cabin} onChange={(event) => setCabin(event.target.value)}>
-                      <option>Economy</option><option>Premium economy</option><option>Business</option><option>First class</option>
+                      {CABIN_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </label>
                   <button type="button" className="done-button" onClick={() => setTravellerMenuOpen(false)}>Done</button>
                 </div>
               )}
             </div>
-            <button className="search-button" type="submit"><Search size={18} /> Search flights <ArrowRight size={17} /></button>
+            <button className="search-button" type="submit" disabled={isSearching || airports.length === 0}>
+              <Search size={21} strokeWidth={2.7} />
+              <span>{isSearching ? 'Searching flights...' : 'Search flights'}</span>
+              {!isSearching && <ArrowRight size={20} strokeWidth={2.7} />}
+            </button>
           </form>
           {formError && <p className="form-error" role="alert">{formError}</p>}
-          <div className="panel-foot"><span><Check size={14} /> Compare fares at no cost</span><span>Prices displayed in INR (₹)</span></div>
+          <div className="panel-foot"><span><Check size={14} /> Compare fares at no cost</span><span>Demo data · INR (₹)</span></div>
         </section>
 
         <section className="results-section" id="flights">
@@ -255,7 +297,7 @@ function App() {
               <h2>{searched ? 'Your flight options' : 'Popular flight options'}</h2>
               <p>{searched ? 'Sample options for ' + origin + ' to ' + destination : 'A little inspiration for wherever you want to go next.'}</p>
             </div>
-            <button className="text-link" onClick={() => { setSearched(true); setNotice('Showing sample flight options. Live supplier data is not connected yet.'); }}>View all flights <ArrowRight size={16} /></button>
+            <div className="results-heading-meta">{results.length} sample options</div>
           </div>
 
           <div className="results-layout">
@@ -263,20 +305,19 @@ function App() {
               <div className="filter-heading"><SlidersHorizontal size={17} /><strong>Filters</strong><button onClick={resetFilters}>Reset</button></div>
               <div className="filter-group">
                 <h3>Stops</h3>
-                <label className="check-option"><input type="checkbox" checked={nonstopOnly} onChange={(event) => setNonstopOnly(event.target.checked)} /><span>Non-stop only</span><b>3</b></label>
-                <label className="check-option disabled"><input type="checkbox" disabled /><span>1 stop or more</span><b>1</b></label>
+                <label className="check-option"><input type="checkbox" checked={nonstopOnly} onChange={(event) => setNonstopOnly(event.target.checked)} /><span>Non-stop only</span><b>{searchResults.filter((flight) => flight.stops === 0).length}</b></label>
               </div>
               <div className="filter-group">
                 <h3>Maximum price</h3>
-                <input className="price-slider" type="range" min="12000" max="30000" step="500" value={maxFare} onChange={(event) => setMaxFare(Number(event.target.value))} aria-label="Maximum price" />
-                <div className="range-labels"><span>₹12,000</span><strong>{money(maxFare)}</strong></div>
+                <input className="price-slider" type="range" min="3000" max="60000" step="500" value={maxFare} onChange={(event) => setMaxFare(Number(event.target.value))} aria-label="Maximum price" />
+                <div className="range-labels"><span>₹3,000</span><strong>{money(maxFare)}</strong></div>
               </div>
               <div className="filter-group">
                 <h3>Airlines</h3>
-                {AIRLINES.map((airline) => (
+                {airlineNames.map((airline) => (
                   <label className="check-option" key={airline}>
                     <input type="checkbox" checked={selectedAirlines.includes(airline)} onChange={() => toggleAirline(airline)} />
-                    <span>{airline}</span><b>·</b>
+                    <span>{airline}</span>
                   </label>
                 ))}
               </div>
@@ -290,41 +331,44 @@ function App() {
 
             <div className="flight-results">
               <div className="results-toolbar">
-                <span><b>{results.length} flights</b> found <span className="muted">· Sample data</span></span>
+                <span><b>{results.length} flights</b> found <span className="muted">· Local mock API</span></span>
                 <div className="sort-control"><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} aria-label="Sort flights"><option>Recommended</option><option>Cheapest</option><option>Fastest</option></select></div>
               </div>
-              {results.map((flight) => (
+              {isSearching && <div className="loading-state" role="status"><span className="loading-spinner" /> Searching local sample inventory...</div>}
+              {!isSearching && results.map((flight) => (
                 <article className="flight-card" key={flight.id}>
                   <div className="flight-main">
                     <div className="airline">
-                      <div className={'airline-logo logo-' + flight.id}>{flight.airline.split(' ').map((word) => word[0]).join('').slice(0, 2)}</div>
+                      <div className={'airline-logo logo-' + (flight.id % 4 + 1)}>{flight.airlineCode}</div>
                       <div><strong>{flight.airline}</strong><small>{flight.code}</small></div>
                     </div>
                     <div className="journey">
                       <div className="time-place"><strong>{flight.depart}</strong><span>{flight.from}</span></div>
                       <div className="journey-line">
                         <small>{flight.duration}</small><div><i /><span /><i /></div>
-                        <small>{flight.stops === 0 ? 'Non-stop' : '1 stop'}</small>
+                        <small>{flight.stops === 0 ? 'Non-stop' : flight.stops + ' stop'}</small>
                         {flight.stopDetail && <em>{flight.stopDetail}</em>}
                       </div>
                       <div className="time-place right"><strong>{flight.arrive}</strong><span>{flight.to}</span></div>
                     </div>
                     <div className="fare">
-                      <strong>{money(flight.price)}</strong><small>per person · sample fare</small>
-                      <button onClick={() => setNotice('This is a sample offer. Supplier price validation and booking links will be connected with the flight API.')}>View deal <ArrowUpRight size={15} /></button>
+                      <strong>{money(flight.price)}</strong><small>per person · {flight.fareType === 'ROUND_TRIP' ? 'round trip' : 'one way'}</small>
+                      <button onClick={() => showNotice('Sample offer only. Live price validation and provider links will be connected with the backend.')}>View deal <ArrowUpRight size={15} /></button>
                     </div>
                   </div>
-                  {(flight.label || flight.id === 1) && (
+                  {(flight.label || flight.carbonIndex === 'low') && (
                     <div className="flight-meta">
                       {flight.label && <span className={flight.label === 'Best price' ? 'best-tag' : 'meta-tag'}>{flight.label === 'Best price' && <Sparkles size={12} />} {flight.label}</span>}
-                      {flight.id === 1 && <span className="carbon-tag"><Check size={12} /> Lower emissions*</span>}
+                      {flight.carbonIndex === 'low' && <span className="carbon-tag"><Check size={12} /> Lower emissions · demo estimate</span>}
                     </div>
                   )}
                   <button className={savedFlights.includes(flight.id) ? 'save-flight saved' : 'save-flight'} onClick={() => toggleSaved(flight.id)} aria-label={savedFlights.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={savedFlights.includes(flight.id)}><Heart size={17} fill={savedFlights.includes(flight.id) ? 'currentColor' : 'none'} /></button>
                 </article>
               ))}
-              {results.length === 0 && <div className="empty-state">No sample flights match these filters. Try resetting your filters.</div>}
-              <div className="results-disclaimer"><ShieldCheck size={15} /> Sample UI data only. Live fares and availability must be confirmed by a travel supplier.</div>
+              {!isSearching && results.length === 0 && (
+                <div className="empty-state">{searched ? 'No sample flights match this route or your selected filters. Try another route or reset filters.' : 'Loading featured sample fares...'}</div>
+              )}
+              <div className="results-disclaimer"><ShieldCheck size={15} /> Simulated local JSON data for UI testing only. It does not represent live airline prices or availability.</div>
             </div>
           </div>
         </section>
