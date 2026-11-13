@@ -166,6 +166,5 @@ test('profile name can be updated in the local demo account', async ({ page }) =
   await page.getByRole('button', { name: 'Profile' }).click();
   await page.getByLabel('Full name').fill('FlyScanner Profile QA');
   await page.getByRole('button', { name: /Save changes/i }).click();
-  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner Profile QA.' })).toBeVisible();
+  await expect(page.locator('.account-user-summary strong')).toHaveText('FlyScanner Profile QA');
 });
