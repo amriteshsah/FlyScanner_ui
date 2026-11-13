@@ -20,6 +20,8 @@ export type FlightResult = {
   stops: number;
   stopDetail?: string;
   price: number;
+  outboundFare: number;
+  returnFare: number;
   label?: string;
   baggage: string;
   seatsRemaining: number;
@@ -128,6 +130,8 @@ function toFlightResult(offer: RawOffer, airline: Airline | undefined, params: F
   const inboundFare = roundTrip
     ? Math.round((offer.returnFare * multiplier * dateFareFactor(params.returnDate!)) / 10) * 10
     : 0;
+  const outboundTotal = outboundFare * params.adults;
+  const returnTotal = inboundFare * params.adults;
 
   return {
     id: offer.id,
@@ -142,7 +146,9 @@ function toFlightResult(offer: RawOffer, airline: Airline | undefined, params: F
     durationMinutes: offer.durationMinutes,
     stops: offer.stops,
     stopDetail: offer.stopDetail ?? undefined,
-    price: outboundFare + inboundFare,
+    price: outboundTotal + returnTotal,
+    outboundFare: outboundTotal,
+    returnFare: returnTotal,
     label: offer.id === 1001 ? 'Best price' : offer.id === 1003 ? 'Top airline' : undefined,
     baggage: offer.baggage,
     seatsRemaining: offer.seatsRemaining,
