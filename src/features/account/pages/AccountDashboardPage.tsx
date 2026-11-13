@@ -14,6 +14,7 @@ import {
   getPriceAlerts,
   getSavedFlights,
   removePriceAlert,
+  removeSavedFlight as removeSavedFlightFromStore,
   signOutDemo,
   updateDemoProfile,
 } from '../services/mockAccountStore';
@@ -130,14 +131,8 @@ export default function AccountDashboardPage() {
   }
 
   function removeSavedFlight(id: number) {
-    try {
-      const next = savedFlights.filter((flight) => flight.id !== id);
-      localStorage.setItem('flyscanner.demo.saved-flights.v1', JSON.stringify(next));
-      setSavedFlights(next);
-      setNotice('Flight removed from saved items.');
-    } catch {
-      setNotice('Browser storage is unavailable. The saved list could not be updated.');
-    }
+    setSavedFlights(removeSavedFlightFromStore(id));
+    setNotice('Flight removed from saved items.');
   }
 
   if (!user) {
