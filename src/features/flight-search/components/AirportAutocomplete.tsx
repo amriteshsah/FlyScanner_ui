@@ -50,7 +50,7 @@ export default function AirportAutocomplete({
   }
 
   return (
-    <div className="field airport-autocomplete" ref={rootRef}>
+    <div className={open ? "field airport-autocomplete is-open" : "field airport-autocomplete"} ref={rootRef}>
       <label htmlFor={inputId}>{label}</label>
       <div className="airport-input-row">
         <MapPin size={17} aria-hidden="true" />
