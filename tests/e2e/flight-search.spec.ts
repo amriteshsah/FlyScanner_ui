@@ -68,7 +68,7 @@ test('Explore page loads destinations, popular routes and the sample fare calend
 test('popular route opens flight results for the selected route', async ({ page }) => {
   await page.goto('/explore');
   await page.getByRole('link', { name: /Bengaluru to Goa/i }).click();
-  await expect(page).toHaveURL(/\\/flights\\/search\\?.*from=BLR.*to=GOI/);
+  await expect(page).toHaveURL(new RegExp('flights/search.*from=BLR.*to=GOI'));
   await expect(page.getByRole('heading', { name: 'Flight results' })).toBeVisible();
   await expect(page.getByTestId('flight-result-card').first()).toBeVisible();
 });
@@ -78,7 +78,7 @@ test('price calendar passes the selected day into flight search', async ({ page 
   await page.getByRole('button', { name: /January 2027 15, sample fare/i }).click();
   await expect(page.getByText('15 January 2027')).toBeVisible();
   await page.getByRole('link', { name: /Search this date/i }).click();
-  await expect(page).toHaveURL(/\\/flights\\/search\\?.*from=BLR.*to=DXB.*departure=2027-01-15/);
+  await expect(page).toHaveURL(new RegExp('flights/search.*from=BLR.*to=DXB.*departure=2027-01-15'));
   await expect(page.getByRole('heading', { name: 'Flight results' })).toBeVisible();
 });
 
