@@ -196,12 +196,44 @@ export async function searchFlightOffers(params: FlightSearchParams, signal?: Ab
     .sort((first, second) => first.price - second.price);
 }
 
-export async function getDestinationCatalog(signal?: AbortSignal) {
-  const data = await readDataset<{ items: Array<Record<string, unknown>> }>('destinations.json', signal);
+export type Destination = {
+  id: string;
+  city: string;
+  country: string;
+  airportCode: string;
+  tagline: string;
+  fromAirport: string;
+  indicativeFare: number;
+  category: string;
+  imageKey: string;
+};
+
+export type PopularRoute = {
+  id: string;
+  origin: string;
+  destination: string;
+  label: string;
+  fromFare: number;
+  searchCountLabel: string;
+};
+
+export type PriceCalendarMonth = {
+  route: string;
+  month: string;
+  dailyFrom: number[];
+};
+
+export async function getDestinationCatalog(signal?: AbortSignal): Promise<Destination[]> {
+  const data = await readDataset<{ items: Destination[] }>('destinations.json', signal);
   return data.items;
 }
 
-export async function getPopularRoutes(signal?: AbortSignal) {
-  const data = await readDataset<{ items: Array<Record<string, unknown>> }>('popular-routes.json', signal);
+export async function getPopularRoutes(signal?: AbortSignal): Promise<PopularRoute[]> {
+  const data = await readDataset<{ items: PopularRoute[] }>('popular-routes.json', signal);
+  return data.items;
+}
+
+export async function getPriceCalendarCatalog(signal?: AbortSignal): Promise<PriceCalendarMonth[]> {
+  const data = await readDataset<{ items: PriceCalendarMonth[] }>('price-calendar.json', signal);
   return data.items;
 }
