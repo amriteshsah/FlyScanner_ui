@@ -272,7 +272,7 @@ function App() {
                     </div>
                   </div>
                   <label>Cabin class
-                    <select value={cabin} onChange={(event) => setCabin(event.target.value)}>
+                    <select value={cabin} onChange={(event) => setCabin(event.target.value as CabinClass)}>
                       {CABIN_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </label>
