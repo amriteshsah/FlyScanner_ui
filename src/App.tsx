@@ -283,8 +283,8 @@ function App() {
           <div className="section-heading">
             <div>
               <div className="eyebrow dark-eyebrow">A GOOD PLACE TO START</div>
-              <h2>{searched ? 'Your flight options' : 'Popular flight options'}</h2>
-              <p>{searched ? 'Sample options for ' + origin + ' to ' + destination : 'A little inspiration for wherever you want to go next.'}</p>
+              <h2>Popular flight options</h2>
+              <p>Featured sample fares to explore. Start a search to compare a specific route.</p>
             </div>
             <div className="results-heading-meta">{results.length} sample options</div>
           </div>
