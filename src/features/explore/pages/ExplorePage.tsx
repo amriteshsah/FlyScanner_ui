@@ -59,20 +59,29 @@ export default function ExplorePage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let active = true;
+
     Promise.all([
       getDestinationCatalog(controller.signal),
       getPopularRoutes(controller.signal),
       getPriceCalendarCatalog(controller.signal),
     ]).then(([destinationData, routeData, calendar]) => {
+      if (!active) return;
       setDestinations(destinationData);
       setRoutes(routeData);
       setCalendarData(calendar);
     }).catch((reason: unknown) => {
-      if (!(reason instanceof Error && reason.name === 'AbortError')) {
+      if (active && !(reason instanceof Error && reason.name === 'AbortError')) {
         setError('We could not load the Explore demo datasets. Please refresh and try again.');
       }
-    }).finally(() => setLoading(false));
-    return () => controller.abort();
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, []);
 
   const currentCalendar = useMemo(
