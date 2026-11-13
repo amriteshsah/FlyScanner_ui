@@ -344,3 +344,11 @@ input,select{accent-color:#2865e9}
  .date-field{grid-column:span 1}
  .airport-input-row input{font-size:16px}
 }
+
+@media(max-width:700px){
+ .app-shell,.page-shell{
+   padding-left:max(12px,env(safe-area-inset-left));
+   padding-right:max(12px,env(safe-area-inset-right));
+ }
+ .mobile-provider-bar{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+}
