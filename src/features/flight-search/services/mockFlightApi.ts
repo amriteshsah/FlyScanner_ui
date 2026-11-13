@@ -62,7 +62,7 @@ type RawOffer = {
   carbonIndex: string;
 };
 
-const DATA_ROOT = '/mock-data';
+const DATA_ROOT = import.meta.env.BASE_URL + 'mock-data';
 const cabinMultiplier: Record<FlightSearchParams['cabinClass'], number> = {
   ECONOMY: 1,
   PREMIUM_ECONOMY: 1.65,
