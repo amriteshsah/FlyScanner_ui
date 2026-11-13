@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   ArrowDownUp, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
-  Globe2, Heart, MapPin, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
+  Globe2, Heart, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
   Sparkles, Users, X,
 } from 'lucide-react';
 import {
@@ -49,7 +49,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [searchResults, setSearchResults] = useState<FlightResult[]>([]);
-  const [searched, setSearched] = useState(false);
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const [sort, setSort] = useState<SortMode>('Recommended');
