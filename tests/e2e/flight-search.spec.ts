@@ -100,7 +100,11 @@ test('price calendar changes month and renders the correct day count', async ({ 
 
 test('Explore tab opens the dedicated page from the homepage without a prior search', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Explore', exact: true }).click();
+  const exploreLink = page.getByRole('link', { name: 'Explore', exact: true });
+  if (!(await exploreLink.isVisible())) {
+    await page.getByRole('button', { name: 'Open navigation menu' }).click();
+  }
+  await exploreLink.click();
   await expect(page).toHaveURL(/\/explore$/);
   await expect(page.getByRole('heading', { name: 'Places to take you places.' })).toBeVisible();
   await expect(page.locator('.destination-card')).toHaveCount(6);
@@ -134,7 +138,7 @@ test('demo sign-in and account price alerts can be created and removed', async (
   await page.goto('/login');
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
-  await page.getByRole('button', { name: /Price alerts/ }).click();
+  await page.getByRole('button', { name: 'Price alerts', exact: true }).click();
   await page.getByLabel('Target fare (INR)').fill('11500');
   await page.getByRole('button', { name: /Create alert/i }).click();
   await expect(page.getByText('₹11,500')).toBeVisible();
@@ -155,7 +159,7 @@ test('saved flight persists from results page into the account dashboard', async
   await expect(page.getByTestId('flight-result-card').first()).toBeVisible();
   await page.getByRole('button', { name: 'Save flight' }).first().click();
   await page.getByRole('link', { name: 'My account' }).click();
-  await page.getByRole('button', { name: 'Saved flights' }).click();
+  await page.getByRole('button', { name: 'Saved flights', exact: true }).click();
   await expect(page.getByText('6E 1421')).toBeVisible();
 });
 
