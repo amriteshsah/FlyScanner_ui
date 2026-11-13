@@ -333,3 +333,14 @@ input,select{accent-color:#2865e9}
 }
 .nav-links button:hover{color:#1e2b45}
 @media(max-width:760px){.nav-links button{height:42px}}
+
+/* Mobile search form: stack airports for readable names and easier tapping. */
+@media(max-width:700px){
+ .search-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);position:relative}
+ .airport-autocomplete{grid-column:1/3;min-height:82px}
+ .swap-button{position:absolute;top:64px;right:14px;grid-column:auto;grid-row:auto;margin:0;z-index:8}
+ .traveller-wrap{grid-column:1/3}
+ .search-button{grid-column:1/3}
+ .date-field{grid-column:span 1}
+ .airport-input-row input{font-size:16px}
+}
