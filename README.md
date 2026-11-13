@@ -63,3 +63,28 @@ npm run test:e2e
 \`\`\`
 
 The iPhone project exercises Playwright's WebKit engine with an iPhone device profile. It is a useful compatibility check, but it is not a substitute for final testing on physical iOS Safari and Android Chrome devices.
+
+
+## Explore destinations, popular routes and price calendar
+
+Visit \`/explore\` to browse the local destination inspiration cards, popular route shortcuts, and the daily sample fare calendar.
+
+The Explore page loads:
+- \`public/mock-data/destinations.json\`
+- \`public/mock-data/popular-routes.json\`
+- \`public/mock-data/price-calendar.json\`
+
+The page is responsive for phone, tablet and desktop widths. Selecting a destination, route or calendar date opens the existing shareable flight-results route with the corresponding origin, destination and departure date.
+
+All displayed destination fares and calendar prices are fictional demo data.
+
+## End-to-end test coverage
+
+Playwright covers desktop Chromium, Pixel Android Chrome emulation and iPhone WebKit emulation. The browser suite includes the flight search-to-details journey, Explore datasets, popular route navigation, calendar date selection, and narrow-screen overflow checks.
+
+\`\`\`bash
+npx playwright install chromium webkit
+npm run test:e2e
+\`\`\`
+
+The iPhone profile runs WebKit with an iPhone viewport. It provides compatibility coverage but does not replace testing on physical iOS Safari and Android Chrome devices.
