@@ -88,3 +88,16 @@ npm run test:e2e
 \`\`\`
 
 The iPhone profile runs WebKit with an iPhone viewport. It provides compatibility coverage but does not replace testing on physical iOS Safari and Android Chrome devices.
+
+
+## Demo account, saved flights and travel dashboard
+
+Routes:
+- \`/login\` — demo sign-in
+- \`/register\` — demo registration
+- \`/forgot-password\` — password recovery confirmation UI
+- \`/account\` — travel dashboard with Overview, Saved flights, My trips, Price alerts and Profile
+
+The shared header links to Explore from the homepage and all other pages. Saved-flight actions on the homepage, search results and flight details use the same browser-local store. Demo profile changes, saved flights and price-alert records persist in browser local storage.
+
+**Security and integration boundary:** This is a frontend prototype. It does not authenticate users with a server, hash or verify passwords, send password recovery email, monitor live fares, send notifications, or store user records securely. Do not use real personal information or real passwords in this demo. Replace \`mockAccountStore.ts\` with backend authentication and account APIs before public production use.
