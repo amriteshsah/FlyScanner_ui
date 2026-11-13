@@ -1,53 +1,47 @@
 # FlyScanner UI
 
-A responsive flight-search and fare-comparison interface built with **React 19 + TypeScript + Vite**.
-
-## Design principles
-
-- Clean, travel-focused visual design with a calm neutral canvas, navy typography and focused blue actions.
-- Search-first layout that remains usable on mobile, tablet and desktop.
-- Lightweight custom CSS instead of a heavyweight component framework.
-- SVG icons from Lucide React; no icon font or large image dependency.
-- Accessible control labels, keyboard-operable buttons and reduced-motion support.
+A responsive flight discovery and fare-comparison application built with React, TypeScript and Vite.
 
 ## Technology
 
-| Area | Choice |
-| --- | --- |
-| UI framework | React 19.3.1 |
-| Language | TypeScript 7.0.2 |
-| Build tool | Vite 8.3.8 |
-| Icons | Lucide React 1.72.0 |
-| Styling | Custom CSS |
-
-## Requirements
-
-- Node.js 20.19+ (or a compatible newer LTS)
-- npm 10+
+- React + TypeScript + Vite
+- Lucide React icons
+- Lightweight custom CSS
+- Feature-based frontend structure
 
 ## Run locally
 
-\`\`\`bash
+Requirements: Node.js 20.19+ (Node.js 22 LTS recommended).
+
 npm install
 npm run dev
-\`\`\`
+
+Open the Vite URL printed in the terminal (normally http://localhost:5173).
 
 ## Validate and build
 
-\`\`\`bash
 npm run typecheck
 npm run build
 npm run preview
-\`\`\`
 
-## Current implementation
+## Local mock flight API
 
-The current screen is a front-end prototype. Search form controls, sorting, stop/airline/time filters, price ceiling and saved-flight controls are interactive. The flight cards use illustrative sample data. Live supplier fares, account authentication, price alerts and booking redirects are not yet connected.
+The UI reads sample inventory from JSON files served by Vite from public/mock-data/. The mock adapter is in:
 
-Set the backend API base URL in a local \`.env\` file when API integration begins:
+src/features/flight-search/services/mockFlightApi.ts
 
-\`\`\`env
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-\`\`\`
+| Dataset | Purpose |
+| --- | --- |
+| airports.json | Airport/city autocomplete and IATA-code resolution |
+| airlines.json | Airline reference information |
+| flight-offers.json | Sample flight inventory for several routes |
+| destinations.json | Explore destination content |
+| popular-routes.json | Route shortcuts and indicative mock fares |
+| price-calendar.json | Illustrative daily fares for a future calendar |
+| mock-config.json | Mock API settings and disclaimer |
 
-Never put supplier API secrets in Vite environment variables. Anything prefixed with \`VITE_\` is exposed to the browser.
+The search form fetches these files through the typed mock API adapter, simulates a short network delay, resolves airport codes, and filters offers by route, departure date, passenger count and cabin class. UI filters support stops, airline, price and departure time.
+
+IMPORTANT: This is fictional test data. It does not represent live airline inventory, guaranteed prices, bookable seats or genuine booking links. Never use it to make a real travel purchase.
+
+When the Spring Boot backend is ready, replace the implementation in mockFlightApi.ts with HTTP calls to the backend while retaining the response contracts. Never expose supplier credentials in frontend environment variables.
