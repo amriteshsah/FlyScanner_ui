@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import {
   ArrowDownUp, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
   Globe2, Heart, MapPin, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
@@ -10,8 +11,9 @@ import {
   getAirportCatalog,
   getFeaturedFlights,
   resolveAirportCode,
-  searchFlightOffers,
 } from './features/flight-search/services/mockFlightApi';
+import AirportAutocomplete from './features/flight-search/components/AirportAutocomplete';
+import { createFlightSearchQuery } from './features/flight-search/utils/searchQuery';
 
 type TripType = 'Round trip' | 'One way';
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
@@ -35,6 +37,7 @@ function dateAfter(days: number) {
 }
 
 function App() {
+  const navigate = useNavigate();
   const [trip, setTrip] = useState<TripType>('Round trip');
   const [origin, setOrigin] = useState('Bengaluru (BLR)');
   const [destination, setDestination] = useState('Dubai (DXB)');
@@ -46,7 +49,6 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [searchResults, setSearchResults] = useState<FlightResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
@@ -108,7 +110,7 @@ function App() {
     setDestination(origin);
   }
 
-  async function submitSearch(event: FormEvent<HTMLFormElement>) {
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const originCode = resolveAirportCode(origin, airports);
     const destinationCode = resolveAirportCode(destination, airports);
@@ -131,30 +133,15 @@ function App() {
     }
 
     setFormError('');
-    setNotice('');
-    setIsSearching(true);
-    setSearched(true);
-    resetFilters();
-
-    try {
-      const offers = await searchFlightOffers({
-        originCode,
-        destinationCode,
-        departureDate,
-        returnDate: trip === 'Round trip' ? returnDate : undefined,
-        adults: travellers,
-        cabinClass: cabin,
-      });
-      setSearchResults(offers);
-      setNotice(offers.length
-        ? offers.length + ' sample flight option(s) found. Data is simulated from local JSON files.'
-        : 'No sample flights were found for this route, date and cabin class. Try another search.');
-      document.getElementById('flights')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch {
-      setFormError('The sample flight search failed. Please try again.');
-    } finally {
-      setIsSearching(false);
-    }
+    const query = createFlightSearchQuery({
+      originCode,
+      destinationCode,
+      departureDate,
+      returnDate: trip === 'Round trip' ? returnDate : undefined,
+      adults: travellers,
+      cabinClass: cabin,
+    });
+    navigate('/flights/search?' + query);
   }
 
   function toggleAirline(airline: string) {
@@ -229,20 +216,23 @@ function App() {
           </div>
 
           <form className="search-grid" onSubmit={submitSearch}>
-            <label className="field airport-field">
-              <span>FROM</span>
-              <div><MapPin size={17} /><input aria-label="Departure city or airport" list="airport-options" value={origin} onChange={(event) => setOrigin(event.target.value)} placeholder="Choose origin" /></div>
-              <small>Departure city or airport</small>
-            </label>
+            <AirportAutocomplete
+              label="FROM"
+              value={origin}
+              placeholder="Choose origin city or airport"
+              airports={airports}
+              onChange={setOrigin}
+              onSelect={(airport) => setOrigin(airport.city + ' (' + airport.code + ')')}
+            />
             <button type="button" className="swap-button" onClick={swapAirports} aria-label="Swap departure and destination"><ArrowDownUp size={17} /></button>
-            <label className="field airport-field">
-              <span>TO</span>
-              <div><MapPin size={17} /><input aria-label="Destination city or airport" list="airport-options" value={destination} onChange={(event) => setDestination(event.target.value)} placeholder="Choose destination" /></div>
-              <small>Where would you like to go?</small>
-            </label>
-            <datalist id="airport-options">
-              {airports.map((airport) => <option key={airport.code} value={airport.city + ' (' + airport.code + ')'} />)}
-            </datalist>
+            <AirportAutocomplete
+              label="TO"
+              value={destination}
+              placeholder="Choose destination city or airport"
+              airports={airports}
+              onChange={setDestination}
+              onSelect={(airport) => setDestination(airport.city + ' (' + airport.code + ')')}
+            />
             <label className="field date-field">
               <span>DEPARTURE</span>
               <div><CalendarDays size={17} /><input aria-label="Departure date" type="date" min={dateAfter(0)} value={departureDate} onChange={(event) => setDepartureDate(event.target.value)} /></div>
@@ -280,10 +270,10 @@ function App() {
                 </div>
               )}
             </div>
-            <button className="search-button" type="submit" disabled={isSearching || airports.length === 0}>
+            <button className="search-button" type="submit" disabled={airports.length === 0}>
               <Search size={21} strokeWidth={2.7} />
-              <span>{isSearching ? 'Searching flights...' : 'Search flights'}</span>
-              {!isSearching && <ArrowRight size={20} strokeWidth={2.7} />}
+              <span>Search flights</span>
+              <ArrowRight size={20} strokeWidth={2.7} />
             </button>
           </form>
           {formError && <p className="form-error" role="alert">{formError}</p>}
@@ -334,8 +324,7 @@ function App() {
                 <span><b>{results.length} flights</b> found <span className="muted">· Local mock API</span></span>
                 <div className="sort-control"><span>Sort by</span><select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} aria-label="Sort flights"><option>Recommended</option><option>Cheapest</option><option>Fastest</option></select></div>
               </div>
-              {isSearching && <div className="loading-state" role="status"><span className="loading-spinner" /> Searching local sample inventory...</div>}
-              {!isSearching && results.map((flight) => (
+              {results.map((flight) => (
                 <article className="flight-card" key={flight.id}>
                   <div className="flight-main">
                     <div className="airline">
@@ -353,7 +342,14 @@ function App() {
                     </div>
                     <div className="fare">
                       <strong>{money(flight.price)}</strong><small>per person · {flight.fareType === 'ROUND_TRIP' ? 'round trip' : 'one way'}</small>
-                      <button onClick={() => showNotice('Sample offer only. Live price validation and provider links will be connected with the backend.')}>View deal <ArrowUpRight size={15} /></button>
+                      <Link className="home-view-deal" to={'/flights/' + flight.id + '?' + createFlightSearchQuery({
+                        originCode: resolveAirportCode(origin, airports) ?? 'BLR',
+                        destinationCode: resolveAirportCode(destination, airports) ?? 'DXB',
+                        departureDate,
+                        returnDate: trip === 'Round trip' ? returnDate : undefined,
+                        adults: travellers,
+                        cabinClass: cabin,
+                      })}>View details <ArrowUpRight size={15} /></Link>
                     </div>
                   </div>
                   {(flight.label || flight.carbonIndex === 'low') && (
@@ -365,10 +361,10 @@ function App() {
                   <button className={savedFlights.includes(flight.id) ? 'save-flight saved' : 'save-flight'} onClick={() => toggleSaved(flight.id)} aria-label={savedFlights.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={savedFlights.includes(flight.id)}><Heart size={17} fill={savedFlights.includes(flight.id) ? 'currentColor' : 'none'} /></button>
                 </article>
               ))}
-              {!isSearching && results.length === 0 && (
-                <div className="empty-state">{searched ? 'No sample flights match this route or your selected filters. Try another route or reset filters.' : 'Loading featured sample fares...'}</div>
+              {results.length === 0 && (
+                <div className="empty-state">No featured sample flights are available for this route. Search for a route to see its matching demo offers.</div>
               )}
-              <div className="results-disclaimer"><ShieldCheck size={15} /> Simulated local JSON data for UI testing only. It does not represent live airline prices or availability.</div>
+              <div className="results-disclaimer"><ShieldCheck size={15} /> Featured fares are simulated JSON data. Search for a route to view matching sample offers.</div>
             </div>
           </div>
         </section>
