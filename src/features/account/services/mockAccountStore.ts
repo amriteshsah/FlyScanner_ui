@@ -130,6 +130,13 @@ export function toggleSavedFlight(flight: FlightResult): SavedFlight[] {
   return next;
 }
 
+
+export function removeSavedFlight(id: number): SavedFlight[] {
+  const next = getSavedFlights().filter((flight) => flight.id !== id);
+  writeStorage(KEYS.savedFlights, next);
+  return next;
+}
+
 export function getPriceAlerts(): PriceAlert[] {
   return readStorage<PriceAlert[]>(KEYS.alerts, []);
 }
