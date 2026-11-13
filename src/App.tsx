@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import {
   ArrowDownUp, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown,
   Globe2, Heart, MapPin, Menu, Plane, Search, ShieldCheck, SlidersHorizontal,
@@ -110,7 +110,7 @@ function App() {
     setSort('Recommended');
   }
 
-  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!origin.trim() || !destination.trim()) {
       setFormError('Enter both a departure and destination city.');
