@@ -1,0 +1,147 @@
+{
+  "dataset": "airports",
+  "version": 1,
+  "description": "Airport reference data for city and airport autocomplete.",
+  "items": [
+    {
+      "code": "BLR",
+      "city": "Bengaluru",
+      "country": "India",
+      "airportName": "Kempegowda International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "DEL",
+      "city": "New Delhi",
+      "country": "India",
+      "airportName": "Indira Gandhi International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "BOM",
+      "city": "Mumbai",
+      "country": "India",
+      "airportName": "Chhatrapati Shivaji Maharaj International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "HYD",
+      "city": "Hyderabad",
+      "country": "India",
+      "airportName": "Rajiv Gandhi International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "MAA",
+      "city": "Chennai",
+      "country": "India",
+      "airportName": "Chennai International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "CCU",
+      "city": "Kolkata",
+      "country": "India",
+      "airportName": "Netaji Subhas Chandra Bose International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "PAT",
+      "city": "Patna",
+      "country": "India",
+      "airportName": "Jay Prakash Narayan Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "GOI",
+      "city": "Goa",
+      "country": "India",
+      "airportName": "Manohar International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "COK",
+      "city": "Kochi",
+      "country": "India",
+      "airportName": "Cochin International Airport",
+      "timeZone": "Asia/Kolkata"
+    },
+    {
+      "code": "DXB",
+      "city": "Dubai",
+      "country": "United Arab Emirates",
+      "airportName": "Dubai International Airport",
+      "timeZone": "Asia/Dubai"
+    },
+    {
+      "code": "SIN",
+      "city": "Singapore",
+      "country": "Singapore",
+      "airportName": "Singapore Changi Airport",
+      "timeZone": "Asia/Singapore"
+    },
+    {
+      "code": "LHR",
+      "city": "London",
+      "country": "United Kingdom",
+      "airportName": "London Heathrow Airport",
+      "timeZone": "Europe/London"
+    },
+    {
+      "code": "CDG",
+      "city": "Paris",
+      "country": "France",
+      "airportName": "Charles de Gaulle Airport",
+      "timeZone": "Europe/Paris"
+    },
+    {
+      "code": "BKK",
+      "city": "Bangkok",
+      "country": "Thailand",
+      "airportName": "Suvarnabhumi Airport",
+      "timeZone": "Asia/Bangkok"
+    },
+    {
+      "code": "KUL",
+      "city": "Kuala Lumpur",
+      "country": "Malaysia",
+      "airportName": "Kuala Lumpur International Airport",
+      "timeZone": "Asia/Kuala_Lumpur"
+    },
+    {
+      "code": "DOH",
+      "city": "Doha",
+      "country": "Qatar",
+      "airportName": "Hamad International Airport",
+      "timeZone": "Asia/Qatar"
+    },
+    {
+      "code": "JFK",
+      "city": "New York",
+      "country": "United States",
+      "airportName": "John F. Kennedy International Airport",
+      "timeZone": "America/New_York"
+    },
+    {
+      "code": "HND",
+      "city": "Tokyo",
+      "country": "Japan",
+      "airportName": "Haneda Airport",
+      "timeZone": "Asia/Tokyo"
+    },
+    {
+      "code": "FRA",
+      "city": "Frankfurt",
+      "country": "Germany",
+      "airportName": "Frankfurt Airport",
+      "timeZone": "Europe/Berlin"
+    },
+    {
+      "code": "SYD",
+      "city": "Sydney",
+      "country": "Australia",
+      "airportName": "Sydney Airport",
+      "timeZone": "Australia/Sydney"
+    }
+  ]
+}
