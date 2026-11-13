@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import SiteHeader from '../../../components/layout/SiteHeader';
 import { type Airport, type FlightResult, getAirportCatalog, searchFlightOffers } from '../../flight-search/services/mockFlightApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
+import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
 
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
@@ -21,7 +22,7 @@ export default function FlightResultsPage() {
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [maxFare, setMaxFare] = useState(60000);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [saved, setSaved] = useState<number[]>([]);
+  const [saved, setSaved] = useState<number[]>(() => getSavedFlights().map((flight) => flight.id));
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
@@ -76,7 +77,11 @@ export default function FlightResultsPage() {
   }
 
   function toggleSaved(id: number) {
-    setSaved((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    const flight = flights.find((item) => item.id === id);
+    if (!flight) return;
+    const updated = toggleSavedFlight(flight);
+    setSaved(updated.map((item) => item.id));
+    setNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
   }
 
   const query = criteria ? createFlightSearchQuery(criteria) : '';
