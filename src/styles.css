@@ -352,3 +352,6 @@ input,select{accent-color:#2865e9}
  }
  .mobile-provider-bar{padding-bottom:max(10px,env(safe-area-inset-bottom))}
 }
+
+.airport-autocomplete.is-open{z-index:45}
+.airport-autocomplete.is-open .airport-options{z-index:46}
