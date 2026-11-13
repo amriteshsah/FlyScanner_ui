@@ -96,3 +96,76 @@ test('price calendar changes month and renders the correct day count', async ({ 
   await expect(page.getByTestId('calendar-day')).toHaveCount(28);
   await expect(page.getByRole('button', { name: /February 2027 14, sample fare/i })).toBeVisible();
 });
+
+
+test('Explore tab opens the dedicated page from the homepage without a prior search', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Explore', exact: true }).click();
+  await expect(page).toHaveURL(/\/explore$/);
+  await expect(page.getByRole('heading', { name: 'Places to take you places.' })).toBeVisible();
+  await expect(page.locator('.destination-card')).toHaveCount(6);
+  await expect(page.locator('.popular-route-card')).toHaveCount(5);
+  await expect(page.getByTestId('calendar-day')).toHaveCount(31);
+});
+
+test('Explore direct entry and refresh load all sections without flight search state', async ({ page }) => {
+  await page.goto('/explore');
+  await expect(page.locator('.destination-card')).toHaveCount(6);
+  await page.reload();
+  await expect(page.locator('.destination-card')).toHaveCount(6);
+  await expect(page.locator('.popular-route-card')).toHaveCount(5);
+  await expect(page.getByRole('heading', { name: 'Price calendar.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Retry loading Explore/i })).toHaveCount(0);
+});
+
+test('demo registration opens the account dashboard', async ({ page }) => {
+  await page.goto('/register');
+  await page.getByLabel('Full name').fill('FlyScanner Tester');
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.getByLabel('Password', { exact: true }).fill('TestPass123!');
+  await page.getByLabel('Confirm password').fill('TestPass123!');
+  await page.getByRole('button', { name: /Create account/i }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
+  await expect(page.getByText('Demo account')).toBeVisible();
+});
+
+test('demo sign-in and account price alerts can be created and removed', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await page.getByRole('button', { name: /Price alerts/ }).click();
+  await page.getByLabel('Target fare (INR)').fill('11500');
+  await page.getByRole('button', { name: /Create alert/i }).click();
+  await expect(page.getByText('₹11,500')).toBeVisible();
+  await page.getByRole('button', { name: 'Delete price alert' }).click();
+  await expect(page.getByText('No alerts created')).toBeVisible();
+});
+
+test('saved flight persists from results page into the account dashboard', async ({ page }) => {
+  await page.goto('/register');
+  await page.getByLabel('Full name').fill('Saved Flight Tester');
+  await page.getByLabel('Email address').fill('saved@flyscanner.test');
+  await page.getByLabel('Password', { exact: true }).fill('TestPass123!');
+  await page.getByLabel('Confirm password').fill('TestPass123!');
+  await page.getByRole('button', { name: /Create account/i }).click();
+  await expect(page).toHaveURL(/\/account$/);
+
+  await page.goto('/flights/search?from=BLR&to=DXB&departure=2026-12-12&adults=1&cabin=ECONOMY&trip=ONE_WAY');
+  await expect(page.getByTestId('flight-result-card').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Save flight' }).first().click();
+  await page.getByRole('link', { name: 'My account' }).click();
+  await page.getByRole('button', { name: 'Saved flights' }).click();
+  await expect(page.getByText('6E 1421')).toBeVisible();
+});
+
+test('profile name can be updated in the local demo account', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await page.getByRole('button', { name: 'Profile' }).click();
+  await page.getByLabel('Full name').fill('FlyScanner Profile QA');
+  await page.getByRole('button', { name: /Save changes/i }).click();
+  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner Profile QA.' })).toBeVisible();
+});
