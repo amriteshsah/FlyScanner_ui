@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import App from './App';
 import FlightResultsPage from './features/flight-results/pages/FlightResultsPage';
 import FlightDetailsPage from './features/flight-details/pages/FlightDetailsPage';
+import ExplorePage from './features/explore/pages/ExplorePage';
 import './styles.css';
 
 function NotFoundPage() {
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<App />} />
         <Route path="/flights/search" element={<FlightResultsPage />} />
         <Route path="/flights/:offerId" element={<FlightDetailsPage />} />
+        <Route path="/explore" element={<ExplorePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
