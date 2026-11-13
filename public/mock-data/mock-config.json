@@ -1,0 +1,18 @@
+{
+  "dataset": "mock-config",
+  "version": 1,
+  "mode": "simulated",
+  "responseDelayMs": 350,
+  "defaultCurrency": "INR",
+  "supportedTripTypes": [
+    "ONE_WAY",
+    "ROUND_TRIP"
+  ],
+  "supportedCabinClasses": [
+    "ECONOMY",
+    "PREMIUM_ECONOMY",
+    "BUSINESS",
+    "FIRST"
+  ],
+  "notice": "All records are fictional test data and must not be used for actual travel booking."
+}
