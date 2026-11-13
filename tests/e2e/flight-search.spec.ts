@@ -27,7 +27,7 @@ test('airport suggestions support a complete route search and detail navigation'
   await page.getByRole('link', { name: /View flight details/i }).first().click();
   await expect(page).toHaveURL(/\/flights\/\d+\?/);
   await expect(page.getByRole('heading', { name: /Flight itinerary/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Price summary' })).toBeVisible();
+  await expect(page.getByText('PRICE SUMMARY')).toBeVisible();
 });
 
 test('mobile layout does not create horizontal page overflow', async ({ page }) => {
