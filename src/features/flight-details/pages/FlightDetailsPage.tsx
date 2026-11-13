@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, Clock3, Luggage, MapPin, Plane, ShieldCheck, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, Clock3, Heart, Luggage, MapPin, Plane, ShieldCheck, Users } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import SiteHeader from '../../../components/layout/SiteHeader';
 import { type Airport, type FlightResult, getAirportCatalog, searchFlightOffers } from '../../flight-search/services/mockFlightApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
+import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
 
@@ -16,6 +17,7 @@ export default function FlightDetailsPage() {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
+  const [savedIds, setSavedIds] = useState<number[]>(() => getSavedFlights().map((item) => item.id));
 
   useEffect(() => {
     const controller = new AbortController();
@@ -40,6 +42,13 @@ export default function FlightDetailsPage() {
   const destination = airports.find((airport) => airport.code === criteria?.destinationCode);
   const resultQuery = criteria ? createFlightSearchQuery(criteria) : '';
 
+  function toggleSaved() {
+    if (!flight) return;
+    const updated = toggleSavedFlight(flight);
+    setSavedIds(updated.map((item) => item.id));
+    setNotice(updated.some((item) => item.id === flight.id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
+  }
+
   return (
     <div className="page-shell detail-page-shell">
       <SiteHeader onAction={setNotice} />
@@ -63,7 +72,13 @@ export default function FlightDetailsPage() {
                 <h1>{origin?.city ?? flight.from} <span>→</span> {destination?.city ?? flight.to}</h1>
                 <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' · Return ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'} · {cabinLabel(criteria.cabinClass)}</p>
               </div>
-              <span className="detail-demo-tag"><ShieldCheck size={15} /> Sample offer</span>
+              <div className="detail-heading-actions">
+                <button type="button" className={flight && savedIds.includes(flight.id) ? 'detail-save-button saved' : 'detail-save-button'} onClick={toggleSaved} aria-pressed={Boolean(flight && savedIds.includes(flight.id))}>
+                  <Heart size={16} fill={flight && savedIds.includes(flight.id) ? 'currentColor' : 'none'} />
+                  {flight && savedIds.includes(flight.id) ? 'Saved' : 'Save flight'}
+                </button>
+                <span className="detail-demo-tag"><ShieldCheck size={15} /> Sample offer</span>
+              </div>
             </section>
 
             <div className="detail-layout">
