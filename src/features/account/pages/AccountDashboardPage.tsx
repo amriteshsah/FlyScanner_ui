@@ -79,7 +79,7 @@ export default function AccountDashboardPage() {
     return () => { active = false; };
   }, [navigate]);
 
-  const greetingName = useMemo(() => user?.name.split(' ')[0] ?? 'traveller', [user]);
+  const greetingName = useMemo(() => user?.fullName.split(' ')[0] ?? 'traveller', [user]);
 
   function selectTab(tab: Tab) {
     setSearchParams(tab === 'overview' ? {} : { tab });
@@ -88,6 +88,8 @@ export default function AccountDashboardPage() {
   async function signOut() {
     try {
       await logout();
+    } catch {
+      setNotice('Your browser session has been cleared. The server session will expire automatically.');
     } finally {
       setUser(null);
       navigate('/', { replace: true });
