@@ -248,7 +248,7 @@ test('backend flight search renders API offers, partial provider status and deta
   await page.getByRole('link', { name: /View flight details/i }).click();
   await expect(page.getByRole('heading', { name: 'Flight itinerary' })).toBeVisible();
   await expect(page.getByText('FS100')).toBeVisible();
-  await expect(page.getByText(/Synthetic backend fixture/)).toBeVisible();
+  await expect(page.getByText('No booking is made in this demo.')).toBeVisible();
   await expect(page.getByText('Not supplied by search response')).toBeVisible();
   expect(capturedRequests.length).toBe(2);
 });
