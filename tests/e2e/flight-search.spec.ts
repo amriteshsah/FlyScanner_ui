@@ -1,5 +1,45 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
+async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test') {
+  let profile = {
+    userId: 'test-user-1',
+    email,
+    fullName: initialName,
+    role: 'USER',
+    createdAt: '2026-11-14T10:00:00Z',
+  };
+
+  await page.route('**/api/v1/auth/**', async (route) => {
+    const request = route.request();
+    const method = request.method();
+    const url = new URL(request.url());
+    if (url.pathname.endsWith('/me') && method === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profile) });
+      return;
+    }
+    if (url.pathname.endsWith('/me') && method === 'PATCH') {
+      const body = request.postDataJSON() as { fullName: string };
+      profile = { ...profile, fullName: body.fullName };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profile) });
+      return;
+    }
+    if ((url.pathname.endsWith('/register') || url.pathname.endsWith('/login')) && method === 'POST') {
+      const body = request.postDataJSON() as { fullName?: string; email?: string };
+      profile = { ...profile, email: body.email ?? profile.email, fullName: body.fullName ?? profile.fullName };
+      await route.fulfill({
+        status: url.pathname.endsWith('/register') ? 201 : 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: profile.userId, email: profile.email, fullName: profile.fullName, accessToken: 'mock-test-access-token', expiresAt: '2026-11-15T10:00:00Z' }),
+      });
+      return;
+    }
+    if (url.pathname.endsWith('/logout') && method === 'POST') {
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not found' }) });
+  });
+}
 test('homepage opens with a prominent search action', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Go further/i })).toBeVisible();
@@ -122,7 +162,8 @@ test('Explore direct entry and refresh load all sections without flight search s
   await expect(page.getByRole('button', { name: /Retry loading Explore/i })).toHaveCount(0);
 });
 
-test('demo registration opens the account dashboard', async ({ page }) => {
+test('registration creates a backend account and opens the dashboard', async ({ page }) => {
+  await mockAccountApi(page);
   await page.goto('/register');
   await page.getByLabel('Full name').fill('FlyScanner Tester');
   await page.getByLabel('Email address').fill('tester@flyscanner.test');
@@ -131,11 +172,14 @@ test('demo registration opens the account dashboard', async ({ page }) => {
   await page.getByRole('button', { name: /Create account/i }).click();
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
-  await expect(page.getByText('Demo account')).toBeVisible();
+  await expect(page.getByText('USER account')).toBeVisible();
 });
 
-test('demo sign-in and account price alerts can be created and removed', async ({ page }) => {
+test('sign-in and account price alerts can be created and removed', async ({ page }) => {
+  await mockAccountApi(page);
   await page.goto('/login');
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.getByLabel('Password').fill('TestPass123!');
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Price alerts', exact: true }).click();
@@ -147,6 +191,7 @@ test('demo sign-in and account price alerts can be created and removed', async (
 });
 
 test('saved flight persists from results page into the account dashboard', async ({ page }) => {
+  await mockAccountApi(page, 'Saved Flight Tester', 'saved@flyscanner.test');
   await page.goto('/register');
   await page.getByLabel('Full name').fill('Saved Flight Tester');
   await page.getByLabel('Email address').fill('saved@flyscanner.test');
@@ -163,8 +208,11 @@ test('saved flight persists from results page into the account dashboard', async
   await expect(page.getByText('6E 1421')).toBeVisible();
 });
 
-test('profile name can be updated in the local demo account', async ({ page }) => {
+test('profile name is updated through the authenticated backend API', async ({ page }) => {
+  await mockAccountApi(page);
   await page.goto('/login');
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.getByLabel('Password').fill('TestPass123!');
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Profile' }).click();
