@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, CalendarDays, Check, Filter, Heart, SlidersHorizontal, X } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import SiteHeader from '../../../components/layout/SiteHeader';
-import { type Airport, type FlightResult, getAirportCatalog, searchFlightOffers } from '../../flight-search/services/mockFlightApi';
+import { type Airport, type FlightResult, getAirportCatalog } from '../../flight-search/services/mockFlightApi';
+import { getFlightSearchSource, searchFlightResults } from '../../flight-search/services/flightSearchApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
 import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
 
@@ -13,10 +14,14 @@ export default function FlightResultsPage() {
   const [searchParams] = useSearchParams();
   const queryKey = searchParams.toString();
   const criteria = useMemo(() => parseFlightSearchParams(new URLSearchParams(queryKey)), [queryKey]);
+  const searchSource = getFlightSearchSource(searchParams);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [flights, setFlights] = useState<FlightResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [providerNotice, setProviderNotice] = useState('');
+  const [resultDisclaimer, setResultDisclaimer] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
   const [sort, setSort] = useState<SortMode>('Recommended');
   const [nonstopOnly, setNonstopOnly] = useState(false);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
@@ -35,20 +40,34 @@ export default function FlightResultsPage() {
 
     setLoading(true);
     setError('');
-    Promise.all([getAirportCatalog(controller.signal), searchFlightOffers(criteria, controller.signal)])
-      .then(([airportData, offers]) => {
+    setProviderNotice('');
+    Promise.all([
+      getAirportCatalog(controller.signal),
+      searchFlightResults(criteria, controller.signal, searchSource),
+    ])
+      .then(([airportData, searchResult]) => {
         setAirports(airportData);
-        setFlights(offers);
+        setFlights(searchResult.offers);
+        setResultDisclaimer(searchResult.disclaimer);
+        if (searchResult.status === 'PARTIAL_SUCCESS') {
+          setProviderNotice('Some flight sources did not respond. Showing the offers that were available.');
+        } else if (searchResult.status === 'UNAVAILABLE') {
+          setProviderNotice('Flight sources are temporarily unavailable. Please retry your search.');
+        } else if (searchResult.status === 'NO_RESULTS') {
+          setProviderNotice('No offers were returned for this route and date.');
+        }
       })
       .catch((reason: unknown) => {
         if (reason instanceof Error && reason.name !== 'AbortError') {
-          setError('We could not load the sample flight inventory. Please retry your search.');
+          setError(reason.message || 'We could not load flight results. Please retry your search.');
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
 
     return () => controller.abort();
-  }, [queryKey]);
+  }, [queryKey, retryKey, searchSource]);
 
   const origin = airports.find((airport) => airport.code === criteria?.originCode);
   const destination = airports.find((airport) => airport.code === criteria?.destinationCode);
@@ -84,7 +103,10 @@ export default function FlightResultsPage() {
     setNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
   }
 
-  const query = criteria ? createFlightSearchQuery(criteria) : '';
+  const sourceParam = searchParams.get('source');
+  const query = criteria
+    ? createFlightSearchQuery(criteria) + (sourceParam ? '&source=' + encodeURIComponent(sourceParam) : '')
+    : '';
 
   return (
     <div className="page-shell">
@@ -107,9 +129,9 @@ export default function FlightResultsPage() {
             <div>
               <div className="eyebrow">COMPARE YOUR OPTIONS</div>
               <h2>Flight results</h2>
-              <p>{loading ? 'Searching the sample flight inventory…' : error || (visibleFlights.length + ' sample flight options for your journey')}</p>
+              <p>{loading ? 'Searching flight options…' : error || (visibleFlights.length + ' flight options for your journey')}</p>
             </div>
-            <div className="results-trust"><Check size={15} /> Demo inventory · prices are illustrative</div>
+            <div className="results-trust"><Check size={15} /> {searchSource === 'mock' ? 'Demo inventory · prices are illustrative' : 'Backend search · verify final fare with provider'}</div>
           </div>
 
           <div className="results-toolbar-mobile">
@@ -149,7 +171,7 @@ export default function FlightResultsPage() {
 
             <div className="flight-results-page">
               <div className="results-toolbar-desktop">
-                <span><strong>{visibleFlights.length} flights</strong> found <span className="muted">· Local mock API</span></span>
+                <span><strong>{visibleFlights.length} flights</strong> found <span className="muted">· {searchSource === 'mock' ? 'Local mock API' : 'FlyScanner backend API'}</span></span>
                 <label className="sort-control">Sort by
                   <select aria-label="Sort flights" value={sort} onChange={(event) => setSort(event.target.value as SortMode)}>
                     <option>Recommended</option><option>Cheapest</option><option>Fastest</option>
@@ -157,8 +179,9 @@ export default function FlightResultsPage() {
                 </label>
               </div>
 
-              {loading && <div className="loading-state" role="status"><span className="loading-spinner" /> Searching sample flight inventory…</div>}
-              {!loading && error && <div className="empty-state" role="alert">{error}<Link to="/">Start a new search</Link></div>}
+              {loading && <div className="loading-state" role="status"><span className="loading-spinner" /> Searching flight options…</div>}
+              {!loading && providerNotice && visibleFlights.length > 0 && <div className="empty-state" role="status" data-testid="provider-search-notice">{providerNotice}</div>}
+              {!loading && error && <div className="empty-state" role="alert">{error}<button type="button" className="edit-search-button" onClick={() => setRetryKey((value) => value + 1)}>Retry search</button><Link to="/">Start a new search</Link></div>}
               {!loading && !error && visibleFlights.map((flight) => (
                 <article className="result-card" data-testid="flight-result-card" key={flight.id}>
                   <div className="result-card-main">
@@ -171,12 +194,12 @@ export default function FlightResultsPage() {
                       <div className="result-duration"><small>{flight.duration}</small><div className="journey-track"><i /><span /><i /></div><small>{flight.stops === 0 ? 'Non-stop' : flight.stops + ' stop'}</small>{flight.stopDetail && <em>{flight.stopDetail}</em>}</div>
                       <div className="result-time result-time-end"><strong>{flight.arrive}</strong><span>{flight.to}</span></div>
                     </div>
-                    <div className="result-fare"><span className="fare-caption">{flight.fareType === 'ROUND_TRIP' ? 'ROUND TRIP' : 'ONE WAY'}</span><strong>{money(flight.price)}</strong><small>per traveller</small></div>
+                    <div className="result-fare"><span className="fare-caption">{flight.fareType === 'ROUND_TRIP' ? 'ROUND TRIP' : 'ONE WAY'}</span><strong>{money(flight.price)}</strong><small>total for selected travellers</small></div>
                   </div>
                   <div className="result-card-footer">
                     <div className="result-tags">
                       {flight.label && <span className={flight.label === 'Best price' ? 'best-tag' : 'meta-tag'}>{flight.label}</span>}
-                      <span className="result-baggage">{flight.baggage} checked baggage · {flight.seatsRemaining} sample seats</span>
+                      <span className="result-baggage">{flight.seatsRemaining > 0 ? flight.baggage + ' checked baggage · ' + flight.seatsRemaining + ' sample seats' : flight.baggage}</span>
                     </div>
                     <div className="result-actions">
                       <button className={saved.includes(flight.id) ? 'result-save saved' : 'result-save'} type="button" onClick={() => toggleSaved(flight.id)} aria-label={saved.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={saved.includes(flight.id)}><Heart size={17} fill={saved.includes(flight.id) ? 'currentColor' : 'none'} /></button>
@@ -185,8 +208,8 @@ export default function FlightResultsPage() {
                   </div>
                 </article>
               ))}
-              {!loading && !error && visibleFlights.length === 0 && <div className="empty-state">No flights match these filters. Adjust your filters or search another route.</div>}
-              <p className="results-disclaimer">Demo prices and seat counts are fictional test data and are not live or bookable.</p>
+              {!loading && !error && visibleFlights.length === 0 && <div className="empty-state" role="status">{providerNotice || 'No flights match these filters. Adjust your filters or search another route.'}</div>}
+              <p className="results-disclaimer">{resultDisclaimer || 'Always verify the final fare, availability and fare rules with the travel provider.'}</p>
             </div>
           </div>
         </section>

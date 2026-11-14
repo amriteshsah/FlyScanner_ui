@@ -28,6 +28,23 @@ export type FlightResult = {
   provider: string;
   carbonIndex: string;
   fareType: 'ONE_WAY' | 'ROUND_TRIP';
+  source?: 'MOCK' | 'BACKEND';
+  offerToken?: string;
+  checkedAt?: string;
+  expiresAt?: string;
+  affiliateRedirectAvailable?: boolean;
+  journeys?: Array<{
+    legNumber: number;
+    origin: string;
+    destination: string;
+    departureDate: string;
+    depart: string;
+    arrive: string;
+    duration: string;
+    durationMinutes: number;
+    stops: number;
+    stopDetail?: string;
+  }>;
 };
 
 export type FlightSearchParams = {

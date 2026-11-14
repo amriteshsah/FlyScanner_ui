@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, BriefcaseBusiness, Check, Clock3, Heart, Luggage, MapPin, Plane, ShieldCheck, Users } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import SiteHeader from '../../../components/layout/SiteHeader';
-import { type Airport, type FlightResult, getAirportCatalog, searchFlightOffers } from '../../flight-search/services/mockFlightApi';
+import { type Airport, type FlightResult, getAirportCatalog } from '../../flight-search/services/mockFlightApi';
+import { getFlightSearchSource, searchFlightResults } from '../../flight-search/services/flightSearchApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
 import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
 
@@ -13,6 +14,7 @@ export default function FlightDetailsPage() {
   const [searchParams] = useSearchParams();
   const queryKey = searchParams.toString();
   const criteria = useMemo(() => parseFlightSearchParams(new URLSearchParams(queryKey)), [queryKey]);
+  const searchSource = getFlightSearchSource(searchParams);
   const [flight, setFlight] = useState<FlightResult | null>(null);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,21 +28,31 @@ export default function FlightDetailsPage() {
       return () => controller.abort();
     }
     setLoading(true);
-    searchFlightOffers(criteria, controller.signal)
-      .then((offers) => setFlight(offers.find((item) => String(item.id) === offerId) ?? null))
-      .then(() => getAirportCatalog(controller.signal).then(setAirports))
+    Promise.all([
+      searchFlightResults(criteria, controller.signal, searchSource),
+      getAirportCatalog(controller.signal),
+    ])
+      .then(([searchResult, airportData]) => {
+        setFlight(searchResult.offers.find((item) => String(item.id) === offerId) ?? null);
+        setAirports(airportData);
+      })
       .catch((reason: unknown) => {
         if (reason instanceof Error && reason.name !== 'AbortError') {
-          setNotice('Could not load this sample offer. Please return to the results.');
+          setNotice(reason.message || 'Could not load this flight offer. Please return to the results.');
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
-  }, [queryKey, offerId]);
+  }, [queryKey, offerId, searchSource]);
 
   const origin = airports.find((airport) => airport.code === criteria?.originCode);
   const destination = airports.find((airport) => airport.code === criteria?.destinationCode);
-  const resultQuery = criteria ? createFlightSearchQuery(criteria) : '';
+  const sourceParam = searchParams.get('source');
+  const resultQuery = criteria
+    ? createFlightSearchQuery(criteria) + (sourceParam ? '&source=' + encodeURIComponent(sourceParam) : '')
+    : '';
 
   function toggleSaved() {
     if (!flight) return;
@@ -101,7 +113,7 @@ export default function FlightDetailsPage() {
                 <article className="detail-card">
                   <div className="detail-card-heading"><div><span className="eyebrow">WHAT'S INCLUDED</span><h2>Baggage & passenger details</h2></div></div>
                   <div className="detail-inclusions">
-                    <div><Luggage size={19} /><span><strong>Checked baggage</strong><small>{flight.baggage} per traveller · demo allowance</small></span></div>
+                    <div><Luggage size={19} /><span><strong>Checked baggage</strong><small>{flight.baggage}</small></span></div>
                     <div><BriefcaseBusiness size={19} /><span><strong>Cabin baggage</strong><small>One cabin bag · confirm with provider</small></span></div>
                     <div><Users size={19} /><span><strong>Passengers</strong><small>{criteria.adults} adult {criteria.adults === 1 ? 'traveller' : 'travellers'}</small></span></div>
                   </div>
@@ -109,8 +121,14 @@ export default function FlightDetailsPage() {
 
                 {criteria.returnDate && (
                   <article className="detail-card return-estimate-card">
-                    <div className="detail-card-heading"><div><span className="eyebrow">RETURN JOURNEY</span><h2>Return fare estimate</h2></div><span className="detail-date">{formatTravelDate(criteria.returnDate)}</span></div>
-                    <p>The local mock dataset provides a return fare estimate, but does not include a separate return-flight itinerary. The live supplier response will supply both journey segments.</p>
+                    <div className="detail-card-heading"><div><span className="eyebrow">RETURN JOURNEY</span><h2>Return itinerary</h2></div><span className="detail-date">{formatTravelDate(criteria.returnDate)}</span></div>
+                    {flight.journeys?.[1] ? (
+                      <div className="return-journey-summary">
+                        <strong>{flight.journeys[1].origin} → {flight.journeys[1].destination}</strong>
+                        <p>{flight.journeys[1].depart} – {flight.journeys[1].arrive} · {flight.journeys[1].duration} · {flight.journeys[1].stops === 0 ? 'Non-stop' : flight.journeys[1].stops + ' stop(s)'}</p>
+                        {flight.journeys[1].stopDetail && <small>Connection: {flight.journeys[1].stopDetail}</small>}
+                      </div>
+                    ) : <p>The search response did not include a separate return itinerary.</p>}
                   </article>
                 )}
               </section>
@@ -119,13 +137,11 @@ export default function FlightDetailsPage() {
                 <article className="detail-price-card">
                   <span className="eyebrow">PRICE SUMMARY</span>
                   <h2>{money(flight.price)}</h2>
-                  <p>Total sample fare for {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'}</p>
+                  <p>Total indicative fare for {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'}</p>
                   <div className="price-breakdown">
-                    <div><span>Outbound sample fare</span><strong>{money(flight.outboundFare)}</strong></div>
-                    {criteria.returnDate && <div><span>Return sample estimate</span><strong>{money(flight.returnFare)}</strong></div>}
-                    <div className="price-total"><span>Estimated total</span><strong>{money(flight.price)}</strong></div>
+                    <div className="price-total"><span>{criteria.returnDate ? 'Combined round-trip fare' : 'Total fare'}</span><strong>{money(flight.price)}</strong></div>
                   </div>
-                  <button className="provider-button" type="button" onClick={() => setNotice('This is a demo offer. Live supplier validation and booking links will be added when the backend is connected.')}>Continue to provider <ArrowRight size={18} /></button>
+                  <button className="provider-button" type="button" onClick={() => setNotice(flight.affiliateRedirectAvailable ? 'Affiliate redirect is not available for this offer yet.' : 'Affiliate booking redirection is not connected for this offer. No booking has been made.')}>Continue to provider <ArrowRight size={18} /></button>
                   <small className="price-note">No booking is made in this demo.</small>
                 </article>
                 <div className="detail-security-note"><ShieldCheck size={17} /><span><strong>Compare with confidence</strong><small>Always recheck the final fare, baggage and rules with the airline or travel provider.</small></span></div>
@@ -134,7 +150,7 @@ export default function FlightDetailsPage() {
           </>
         )}
       </main>
-      {flight && !loading && <div className="mobile-provider-bar"><div><small>Estimated total</small><strong>{money(flight.price)}</strong></div><button type="button" onClick={() => setNotice('Demo only — no live provider booking link is connected.')}>Continue <ArrowRight size={17} /></button></div>}
+      {flight && !loading && <div className="mobile-provider-bar"><div><small>Estimated total</small><strong>{money(flight.price)}</strong></div><button type="button" onClick={() => setNotice('Affiliate booking redirection is not connected for this offer. No booking has been made.')}>Continue <ArrowRight size={17} /></button></div>}
       <div className={notice ? 'toast visible' : 'toast'} role="status" aria-live="polite"><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="Dismiss message">×</button></div>
     </div>
   );
