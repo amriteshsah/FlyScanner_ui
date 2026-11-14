@@ -1,25 +1,25 @@
 import { type FormEvent, useState } from 'react';
 import { ArrowRight, Eye, EyeOff, Plane, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { signInDemo } from '../services/mockAccountStore';
+import { login } from '../services/authApi';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('demo@flyscanner.test');
-  const [password, setPassword] = useState('FlyDemo123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      signInDemo(email, password);
+      await login(email.trim(), password);
       const next = searchParams.get('next');
-      navigate(next?.startsWith('/') ? next : '/account');
+      navigate(next?.startsWith('/') && !next.startsWith('//') ? next : '/account', { replace: true });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to sign in. Please try again.');
     } finally {
@@ -57,7 +57,7 @@ export default function LoginPage() {
             </label>
             <label>Password
               <span className="password-input">
-                <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" />
+                <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" required minLength={12} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" />
                 <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
               </span>
             </label>
@@ -65,12 +65,6 @@ export default function LoginPage() {
             <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button>
           </form>
           <div className="auth-forgot-link"><Link to="/forgot-password">Forgot password?</Link></div>
-          <div className="demo-credentials">
-            <strong>Demo account</strong>
-            <span>demo@flyscanner.test</span>
-            <span>FlyDemo123!</span>
-            <small>This is a local UI demo. No real authentication or account security is connected.</small>
-          </div>
           <p className="auth-switch">New to FlyScanner? <Link to="/register">Create an account</Link></p>
           <Link className="auth-back-home" to="/">Back to flight search</Link>
         </section>
