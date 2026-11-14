@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { ArrowRight, Eye, EyeOff, Plane, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
-import { registerDemo } from '../services/mockAccountStore';
+import { register } from '../services/authApi';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
     if (password !== confirmPassword) {
@@ -20,10 +20,10 @@ export default function RegisterPage() {
       return;
     }
     try {
-      registerDemo(name, email, password);
-      navigate('/account');
+      await register(name.trim(), email.trim(), password);
+      navigate('/account', { replace: true });
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Unable to create your demo account.');
+      setError(reason instanceof Error ? reason.message : 'Unable to create your account.');
     }
   }
 
@@ -57,7 +57,7 @@ export default function RegisterPage() {
             </label>
             <label>Password
               <span className="password-input">
-                <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" />
+                <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={12} maxLength={72} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 12 characters" />
                 <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
               </span>
             </label>
@@ -67,7 +67,6 @@ export default function RegisterPage() {
             {error && <p className="auth-error" role="alert">{error}</p>}
             <button className="auth-submit" type="submit">Create account <ArrowRight size={17} /></button>
           </form>
-          <p className="auth-demo-note">Demo only: registration is stored in this browser and does not create a secure server account.</p>
           <p className="auth-switch">Already have an account? <Link to="/login">Sign in</Link></p>
           <Link className="auth-back-home" to="/">Back to flight search</Link>
         </section>
