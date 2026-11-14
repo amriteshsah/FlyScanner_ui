@@ -172,3 +172,83 @@ test('profile name can be updated in the local demo account', async ({ page }) =
   await page.getByRole('button', { name: /Save changes/i }).click();
   await expect(page.locator('.account-user-summary strong')).toHaveText('FlyScanner Profile QA');
 });
+
+
+test('backend flight search renders API offers, partial provider status and details', async ({ page }) => {
+  const capturedRequests: Array<Record<string, unknown>> = [];
+  const backendResponse = {
+    searchId: 'f1d6acb5-4244-4fa8-9b13-1b44f7d56789',
+    generatedAt: '2026-11-14T07:00:00Z',
+    status: 'PARTIAL_SUCCESS',
+    providerStatuses: [
+      { providerCode: 'MOCK', status: 'SUCCESS', latencyMs: 12, message: 'Offers returned.' },
+      { providerCode: 'SECONDARY', status: 'TIMEOUT', latencyMs: 3000, message: 'Provider response timed out.' },
+    ],
+    offers: [
+      {
+        offerToken: 'opaque-test-offer-token',
+        providerCode: 'MOCK',
+        price: { amount: '12650.00', currency: 'INR' },
+        itinerary: [
+          {
+            legNumber: 1,
+            origin: 'BLR',
+            destination: 'DXB',
+            departureDate: '2027-01-15',
+            segments: [
+              {
+                origin: 'BLR',
+                destination: 'DXB',
+                carrierCode: 'FS',
+                flightNumber: 'FS100',
+                departureAt: '2027-01-15T07:00:00Z',
+                arrivalAt: '2027-01-15T11:20:00Z',
+                durationMinutes: 260,
+              },
+            ],
+            durationMinutes: 260,
+            stopCount: 0,
+          },
+        ],
+        stops: 0,
+        totalDurationMinutes: 260,
+        checkedAt: '2026-11-14T07:00:00Z',
+        expiresAt: '2026-11-14T07:10:00Z',
+        affiliateRedirectAvailable: false,
+      },
+    ],
+    disclaimer: 'Synthetic backend fixture used for an integration test.',
+  };
+
+  await page.route('**/api/v1/searches', async (route) => {
+    capturedRequests.push(route.request().postDataJSON() as Record<string, unknown>);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(backendResponse),
+    });
+  });
+
+  await page.goto('/flights/search?from=BLR&to=DXB&departure=2027-01-15&adults=2&cabin=ECONOMY&trip=ONE_WAY&source=backend');
+  await expect(page.getByTestId('flight-result-card')).toHaveCount(1);
+  await expect(page.getByTestId('provider-search-notice')).toContainText('Some flight sources did not respond');
+  await expect(page.getByText('₹12,650')).toBeVisible();
+  await expect(page.getByText('FlyScanner backend API')).toBeVisible();
+
+  expect(capturedRequests[0]).toMatchObject({
+    tripType: 'ONE_WAY',
+    legs: [{ origin: 'BLR', destination: 'DXB', departureDate: '2027-01-15' }],
+    passengers: { adults: 2, childrenAges: [], infants: 0 },
+    cabinClass: 'ECONOMY',
+    currency: 'INR',
+    market: 'IN',
+    locale: 'en-IN',
+  });
+
+  await page.getByRole('link', { name: /View flight details/i }).click();
+  await expect(page.getByRole('heading', { name: 'Flight itinerary' })).toBeVisible();
+  await expect(page.getByText('FS100')).toBeVisible();
+  await expect(page.getByText(/Synthetic backend fixture/)).toHaveCount(0);
+  await expect(page.getByText('Not supplied by search response')).toBeVisible();
+  expect(capturedRequests.length).toBe(2);
+});
