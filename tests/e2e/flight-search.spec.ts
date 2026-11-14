@@ -233,7 +233,7 @@ test('backend flight search renders API offers, partial provider status and deta
   await expect(page.getByTestId('flight-result-card')).toHaveCount(1);
   await expect(page.getByTestId('provider-search-notice')).toContainText('Some flight sources did not respond');
   await expect(page.getByText('₹12,650')).toBeVisible();
-  await expect(page.getByText('FlyScanner backend API')).toBeVisible();
+  await expect(page.locator('.results-trust')).toContainText('Backend search');
 
   expect(capturedRequests[0]).toMatchObject({
     tripType: 'ONE_WAY',
