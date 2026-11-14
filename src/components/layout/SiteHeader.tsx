@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bell, Menu, Plane, UserRound, X } from 'lucide-react';
 import { Link } from 'react-router';
-import { getCurrentUser } from '../../features/account/services/mockAccountStore';
+import { getCachedProfile } from '../../features/account/services/authApi';
 
 type SiteHeaderProps = {
   onAction?: (message: string) => void;
@@ -9,7 +9,7 @@ type SiteHeaderProps = {
 
 export default function SiteHeader({ onAction }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const signedIn = Boolean(getCurrentUser());
+  const signedIn = Boolean(getCachedProfile());
   const accountPath = signedIn ? '/account' : '/login';
 
   function closeMenu() {
