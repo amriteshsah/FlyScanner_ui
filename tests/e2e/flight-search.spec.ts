@@ -179,7 +179,7 @@ test('sign-in and account price alerts can be created and removed', async ({ pag
   await mockAccountApi(page);
   await page.goto('/login');
   await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.getByLabel('Password').fill('TestPass123!');
+  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Price alerts', exact: true }).click();
@@ -212,7 +212,7 @@ test('profile name is updated through the authenticated backend API', async ({ p
   await mockAccountApi(page);
   await page.goto('/login');
   await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.getByLabel('Password').fill('TestPass123!');
+  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Profile' }).click();
@@ -298,5 +298,34 @@ test('backend flight search renders API offers, partial provider status and deta
   await expect(page.getByText('FS100')).toBeVisible();
   await expect(page.getByText('No booking is made in this demo.')).toBeVisible();
   await expect(page.getByText('Not supplied by search response')).toBeVisible();
-  expect(capturedRequests.length).toBe(2);
+  // React.StrictMode deliberately replays effects in the Vite development server.
+  // The results and details routes each issue a search; allow the development replay.
+  expect(capturedRequests.length).toBeGreaterThanOrEqual(2);
+  expect(capturedRequests.every((request) => request.tripType === 'ONE_WAY')).toBe(true);
+});
+
+
+test('logout revokes the bearer session and clears the browser session on every device profile', async ({ page }) => {
+  await mockAccountApi(page);
+  let logoutAuthorization = '';
+
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/auth/logout')) {
+      logoutAuthorization = request.headers()['authorization'] ?? '';
+    }
+  });
+
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
+  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await expect(page).toHaveURL(/\\/account$/);
+  await expect(page.getByRole('button', { name: /Sign out/i })).toBeVisible();
+
+  await page.getByRole('button', { name: /Sign out/i }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect.poll(() => logoutAuthorization).toBe('Bearer mock-test-access-token');
+  const sessionToken = await page.evaluate(() => sessionStorage.getItem('flyscanner.auth.access-token'));
+  expect(sessionToken).toBeNull();
 });
