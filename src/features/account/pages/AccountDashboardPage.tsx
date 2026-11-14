@@ -6,18 +6,21 @@ import {
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import SiteHeader from '../../../components/layout/SiteHeader';
 import {
-  type AccountUser,
   type PriceAlert,
   type SavedFlight,
   createPriceAlert,
-  getCurrentUser,
   getPriceAlerts,
   getSavedFlights,
   removePriceAlert,
   removeSavedFlight as removeSavedFlightFromStore,
-  signOutDemo,
-  updateDemoProfile,
 } from '../services/mockAccountStore';
+import {
+  type UserProfile,
+  getCachedProfile,
+  getProfile,
+  logout,
+  updateProfile,
+} from '../services/authApi';
 
 type Tab = 'overview' | 'saved' | 'trips' | 'alerts' | 'profile';
 const TABS: { id: Tab; label: string; icon: typeof UserRound }[] = [
@@ -52,10 +55,10 @@ export default function AccountDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab') as Tab | null;
   const activeTab: Tab = TABS.some((tab) => tab.id === requestedTab) ? requestedTab! : 'overview';
-  const [user, setUser] = useState<AccountUser | null>(() => getCurrentUser());
+  const [user, setUser] = useState<UserProfile | null>(() => getCachedProfile());
   const [savedFlights, setSavedFlights] = useState<SavedFlight[]>(() => getSavedFlights());
   const [alerts, setAlerts] = useState<PriceAlert[]>(() => getPriceAlerts());
-  const [name, setName] = useState(user?.name ?? '');
+  const [name, setName] = useState(user?.fullName ?? '');
   const [origin, setOrigin] = useState('BLR');
   const [destination, setDestination] = useState('DXB');
   const [targetPrice, setTargetPrice] = useState('12000');
@@ -63,8 +66,18 @@ export default function AccountDashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) navigate('/login?next=%2Faccount', { replace: true });
-  }, [user, navigate]);
+    let active = true;
+    getProfile()
+      .then((profile) => {
+        if (!active) return;
+        setUser(profile);
+        setName(profile.fullName);
+      })
+      .catch(() => {
+        if (active) navigate('/login?next=%2Faccount', { replace: true });
+      });
+    return () => { active = false; };
+  }, [navigate]);
 
   const greetingName = useMemo(() => user?.name.split(' ')[0] ?? 'traveller', [user]);
 
@@ -72,10 +85,13 @@ export default function AccountDashboardPage() {
     setSearchParams(tab === 'overview' ? {} : { tab });
   }
 
-  function signOut() {
-    signOutDemo();
-    setUser(null);
-    navigate('/', { replace: true });
+  async function signOut() {
+    try {
+      await logout();
+    } finally {
+      setUser(null);
+      navigate('/', { replace: true });
+    }
   }
 
   function submitAlert(event: FormEvent<HTMLFormElement>) {
@@ -100,16 +116,21 @@ export default function AccountDashboardPage() {
     setNotice('Price alert removed.');
   }
 
-  function saveProfile(event: FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
     if (name.trim().length < 2) {
       setError('Please enter a name with at least two characters.');
       return;
     }
-    const updated = updateDemoProfile(name);
-    setUser(updated);
-    setNotice('Your demo profile has been updated.');
+    try {
+      const updated = await updateProfile(name.trim());
+      setUser(updated);
+      setName(updated.fullName);
+      setNotice('Your profile has been updated.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to update your profile.');
+    }
   }
 
   function removeSavedFlight(id: number) {
@@ -137,10 +158,10 @@ export default function AccountDashboardPage() {
         <div className="account-shell">
           <aside className="account-sidebar">
             <div className="account-user-summary">
-              <div className="account-avatar">{user.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
-              <strong>{user.name}</strong>
+              <div className="account-avatar">{user.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
+              <strong>{user.fullName}</strong>
               <small>{user.email}</small>
-              <span className="account-demo-pill"><ShieldCheck size={12} /> Demo account</span>
+              <span className="account-demo-pill"><ShieldCheck size={12} /> {user.role} account</span>
             </div>
             <nav className="account-tabs" aria-label="Account navigation">
               {TABS.map(({ id, label, icon: Icon }) => (
@@ -213,7 +234,7 @@ export default function AccountDashboardPage() {
 
             {activeTab === 'profile' && (
               <>
-                <div className="account-content-heading"><div><span className="eyebrow">ACCOUNT DETAILS</span><h2>Profile</h2><p>Manage the details displayed in this browser demo.</p></div></div>
+                <div className="account-content-heading"><div><span className="eyebrow">ACCOUNT DETAILS</span><h2>Profile</h2><p>Manage the details stored securely in your FlyScanner account.</p></div></div>
                 <div className="account-panel profile-panel">
                   <form className="profile-form" onSubmit={saveProfile}>
                     <label>Full name<input type="text" required minLength={2} value={name} onChange={(event) => setName(event.target.value)} /></label>
@@ -223,7 +244,7 @@ export default function AccountDashboardPage() {
                   </form>
                   {error && <p className="account-form-error" role="alert">{error}</p>}
                 </div>
-                <div className="account-privacy-note"><ShieldCheck size={17} /><span><strong>Local demo profile</strong><small>This profile is stored in browser local storage only. Secure authentication and server-side account storage are not connected yet.</small></span></div>
+                <div className="account-privacy-note"><ShieldCheck size={17} /><span><strong>Server-managed account</strong><small>Your name, email address and account role are loaded from the FlyScanner backend. Email changes and password recovery require a verified-email flow and are not enabled yet.</small></span></div>
               </>
             )}
           </section>
