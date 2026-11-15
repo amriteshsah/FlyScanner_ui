@@ -154,3 +154,85 @@ export async function logout(): Promise<void> {
     clearSession();
   }
 }
+
+
+export type SavedFlightRecord = {
+  id: string;
+  offerToken: string;
+  airline: string;
+  airlineCode: string;
+  code: string;
+  from: string;
+  to: string;
+  depart: string;
+  arrive: string;
+  duration: string;
+  durationMinutes: number;
+  stops: number;
+  price: number;
+  currency: string;
+  fareType: 'ONE_WAY' | 'ROUND_TRIP';
+  savedAt: string;
+  checkedAt: string;
+  offerExpiresAt: string | null;
+};
+
+export type PriceAlertRecord = {
+  id: string;
+  origin: string;
+  destination: string;
+  tripType: 'ONE_WAY' | 'ROUND_TRIP';
+  departureDate: string;
+  returnDate: string | null;
+  targetPrice: number;
+  currency: string;
+  market: string;
+  active: boolean;
+  createdAt: string;
+  expiresAt: string | null;
+};
+
+export type CreatePriceAlertPayload = {
+  origin: string;
+  destination: string;
+  tripType: 'ONE_WAY' | 'ROUND_TRIP';
+  departureDate: string;
+  returnDate: string | null;
+  targetPrice: number;
+  currency: string;
+  market: string;
+};
+
+export function getSavedFlightsFromApi(): Promise<SavedFlightRecord[]> {
+  return request<SavedFlightRecord[]>('/api/v1/saved-flights');
+}
+
+export function saveFlightToApi(offerToken: string): Promise<SavedFlightRecord> {
+  return request<SavedFlightRecord>('/api/v1/saved-flights', {
+    method: 'POST',
+    body: JSON.stringify({ offerToken }),
+  });
+}
+
+export function removeSavedFlightFromApi(savedFlightId: string): Promise<void> {
+  return request<void>('/api/v1/saved-flights/' + encodeURIComponent(savedFlightId), {
+    method: 'DELETE',
+  });
+}
+
+export function getPriceAlertsFromApi(): Promise<PriceAlertRecord[]> {
+  return request<PriceAlertRecord[]>('/api/v1/alerts');
+}
+
+export function createPriceAlertInApi(payload: CreatePriceAlertPayload): Promise<PriceAlertRecord> {
+  return request<PriceAlertRecord>('/api/v1/alerts', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deactivatePriceAlertInApi(alertId: string): Promise<void> {
+  return request<void>('/api/v1/alerts/' + encodeURIComponent(alertId) + '/deactivate', {
+    method: 'PATCH',
+  });
+}
