@@ -4,6 +4,20 @@ export type UserProfile = {
   fullName: string;
   role: 'USER' | 'ADMIN';
   createdAt: string;
+  phoneNumber?: string | null;
+  dateOfBirth?: string | null;
+  nationality?: string | null;
+  homeAirport?: string | null;
+  preferredCurrency?: string | null;
+};
+
+export type UpdateProfilePayload = {
+  fullName: string;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  nationality: string | null;
+  homeAirport: string | null;
+  preferredCurrency: string | null;
 };
 
 type AuthenticationResponse = {
@@ -17,6 +31,7 @@ type AuthenticationResponse = {
 type ProblemResponse = {
   detail?: string;
   title?: string;
+  correlationId?: string;
 };
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
@@ -76,6 +91,9 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     try {
       const problem = await response.json() as ProblemResponse;
       message = problem.detail || problem.title || message;
+      if (problem.correlationId) {
+        message += ' Reference: ' + problem.correlationId;
+      }
     } catch {
       // Use the generic message for non-JSON responses.
     }
@@ -119,10 +137,10 @@ export async function getProfile(): Promise<UserProfile> {
   return profile;
 }
 
-export async function updateProfile(fullName: string): Promise<UserProfile> {
+export async function updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
   const profile = await request<UserProfile>('/api/v1/auth/me', {
     method: 'PATCH',
-    body: JSON.stringify({ fullName }),
+    body: JSON.stringify(payload),
   });
   const token = readToken();
   if (token) writeSession(token, profile);
