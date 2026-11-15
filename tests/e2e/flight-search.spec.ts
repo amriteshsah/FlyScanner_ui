@@ -2,6 +2,83 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test'): Promise<string[]> {
   const capturedRequestUrls: string[] = [];
+  let savedFlights: Array<Record<string, unknown>> = [];
+  let priceAlerts: Array<Record<string, unknown>> = [];
+
+  await page.route('**/api/v1/saved-flights**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname.endsWith('/saved-flights') && method === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(savedFlights) });
+      return;
+    }
+    if (url.pathname.endsWith('/saved-flights') && method === 'POST') {
+      const body = request.postDataJSON() as { offerToken: string };
+      const existing = savedFlights.find((item) => item.offerToken === body.offerToken);
+      const item = existing ?? {
+        id: 'saved-flight-' + body.offerToken,
+        offerToken: body.offerToken,
+        airline: 'Carrier FS',
+        airlineCode: 'FS',
+        code: 'FS100',
+        from: 'BLR',
+        to: 'DXB',
+        depart: '07:00',
+        arrive: '11:20',
+        duration: '4h 20m',
+        durationMinutes: 260,
+        stops: 0,
+        price: 12650,
+        currency: 'INR',
+        fareType: 'ONE_WAY',
+        savedAt: new Date().toISOString(),
+        checkedAt: new Date().toISOString(),
+        offerExpiresAt: '2026-12-12T07:10:00Z',
+      };
+      if (!existing) savedFlights = [item, ...savedFlights];
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(item) });
+      return;
+    }
+    if (method === 'DELETE') {
+      const id = decodeURIComponent(url.pathname.split('/').pop() ?? '');
+      savedFlights = savedFlights.filter((item) => item.id !== id);
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not found' }) });
+  });
+
+  await page.route('**/api/v1/alerts**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname.endsWith('/alerts') && method === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(priceAlerts) });
+      return;
+    }
+    if (url.pathname.endsWith('/alerts') && method === 'POST') {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      const item = {
+        id: 'test-alert-' + String(priceAlerts.length + 1),
+        ...body,
+        active: true,
+        createdAt: new Date().toISOString(),
+        expiresAt: null,
+      };
+      priceAlerts = [item, ...priceAlerts];
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(item) });
+      return;
+    }
+    if (url.pathname.endsWith('/deactivate') && method === 'PATCH') {
+      const id = decodeURIComponent(url.pathname.split('/').slice(-2, -1)[0] ?? '');
+      priceAlerts = priceAlerts.map((item) => item.id === id ? { ...item, active: false } : item);
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not found' }) });
+  });
+
   let profile: {
     userId: string;
     email: string;
@@ -212,8 +289,8 @@ test('sign-in and account price alerts can be created and removed', async ({ pag
   await page.getByLabel('Target fare (INR)').fill('11500');
   await page.getByRole('button', { name: /Create alert/i }).click();
   await expect(page.getByText('₹11,500')).toBeVisible();
-  await page.getByRole('button', { name: 'Delete price alert' }).click();
-  await expect(page.getByText('No alerts created')).toBeVisible();
+  await page.getByRole('button', { name: 'Deactivate price alert' }).click();
+  await expect(page.getByText('No active alerts')).toBeVisible();
 });
 
 test('saved flight persists from results page into the account dashboard', async ({ page }) => {
@@ -226,12 +303,52 @@ test('saved flight persists from results page into the account dashboard', async
   await page.getByRole('button', { name: /Create account/i }).click();
   await expect(page).toHaveURL(/\/account$/);
 
-  await page.goto('/flights/search?from=BLR&to=DXB&departure=2026-12-12&adults=1&cabin=ECONOMY&trip=ONE_WAY');
+  await page.route('**/api/v1/searches', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        searchId: 'search-test-1',
+        generatedAt: '2026-11-15T10:00:00Z',
+        status: 'SUCCESS',
+        providerStatuses: [{ providerCode: 'MOCK', status: 'SUCCESS', latencyMs: 10, message: 'Offers returned.' }],
+        offers: [{
+          offerToken: 'saved-offer-token-1',
+          providerCode: 'MOCK',
+          price: { amount: '12650.00', currency: 'INR' },
+          itinerary: [{
+            legNumber: 1,
+            origin: 'BLR',
+            destination: 'DXB',
+            departureDate: '2026-12-12',
+            segments: [{
+              origin: 'BLR',
+              destination: 'DXB',
+              carrierCode: 'FS',
+              flightNumber: 'FS100',
+              departureAt: '2026-12-12T07:00:00Z',
+              arrivalAt: '2026-12-12T11:20:00Z',
+              durationMinutes: 260,
+            }],
+            durationMinutes: 260,
+            stopCount: 0,
+          }],
+          stops: 0,
+          totalDurationMinutes: 260,
+          checkedAt: '2026-11-15T10:00:00Z',
+          expiresAt: '2026-11-15T10:10:00Z',
+          affiliateRedirectAvailable: false,
+        }],
+        disclaimer: 'Synthetic test offer.',
+      }),
+    });
+  });
+  await page.goto('/flights/search?from=BLR&to=DXB&departure=2026-12-12&adults=1&cabin=ECONOMY&trip=ONE_WAY&source=backend');
   await expect(page.getByTestId('flight-result-card').first()).toBeVisible();
   await page.getByRole('button', { name: 'Save flight' }).first().click();
   await page.getByRole('link', { name: 'My account' }).click();
   await page.getByRole('button', { name: 'Saved flights', exact: true }).click();
-  await expect(page.getByText('6E 1421')).toBeVisible();
+  await expect(page.getByText('FS100')).toBeVisible();
 });
 
 test('traveler profile details are saved through the authenticated backend API', async ({ page }) => {
