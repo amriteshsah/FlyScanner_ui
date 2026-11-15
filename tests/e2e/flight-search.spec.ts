@@ -2,12 +2,28 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test'): Promise<string[]> {
   const capturedRequestUrls: string[] = [];
-  let profile = {
+  let profile: {
+    userId: string;
+    email: string;
+    fullName: string;
+    role: 'USER';
+    createdAt: string;
+    phoneNumber: string | null;
+    dateOfBirth: string | null;
+    nationality: string | null;
+    homeAirport: string | null;
+    preferredCurrency: string | null;
+  } = {
     userId: 'test-user-1',
     email,
     fullName: initialName,
     role: 'USER',
     createdAt: '2026-11-14T10:00:00Z',
+    phoneNumber: null,
+    dateOfBirth: null,
+    nationality: null,
+    homeAirport: null,
+    preferredCurrency: 'INR',
   };
 
   await page.route('**/api/v1/auth/**', async (route) => {
@@ -20,8 +36,15 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
       return;
     }
     if (url.pathname.endsWith('/me') && method === 'PATCH') {
-      const body = request.postDataJSON() as { fullName: string };
-      profile = { ...profile, fullName: body.fullName };
+      const body = request.postDataJSON() as {
+        fullName: string;
+        phoneNumber: string | null;
+        dateOfBirth: string | null;
+        nationality: string | null;
+        homeAirport: string | null;
+        preferredCurrency: string | null;
+      };
+      profile = { ...profile, ...body };
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profile) });
       return;
     }
@@ -211,7 +234,7 @@ test('saved flight persists from results page into the account dashboard', async
   await expect(page.getByText('6E 1421')).toBeVisible();
 });
 
-test('profile name is updated through the authenticated backend API', async ({ page }) => {
+test('traveler profile details are saved through the authenticated backend API', async ({ page }) => {
   await mockAccountApi(page);
   await page.goto('/login');
   await page.getByLabel('Email address').fill('tester@flyscanner.test');
@@ -219,9 +242,30 @@ test('profile name is updated through the authenticated backend API', async ({ p
   await page.getByRole('button', { name: /^Sign in/ }).click();
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Profile' }).click();
+
   await page.getByLabel('Full name').fill('FlyScanner Profile QA');
+  await page.getByLabel('Mobile number').fill('+91 98765 43210');
+  await page.getByLabel('Date of birth').fill('1990-06-15');
+  await page.getByLabel('Nationality (2-letter country code)').fill('IN');
+  await page.getByLabel('Home airport (IATA code)').fill('BLR');
+  await page.getByLabel('Preferred currency').fill('INR');
+
   await page.getByRole('button', { name: /Save changes/i }).click();
   await expect(page.locator('.account-user-summary strong')).toHaveText('FlyScanner Profile QA');
+  await expect(page.getByLabel('Mobile number')).toHaveValue('+91 98765 43210');
+  await expect(page.getByLabel('Date of birth')).toHaveValue('1990-06-15');
+  await expect(page.getByLabel('Nationality (2-letter country code)')).toHaveValue('IN');
+  await expect(page.getByLabel('Home airport (IATA code)')).toHaveValue('BLR');
+  await expect(page.getByLabel('Preferred currency')).toHaveValue('INR');
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Profile' }).click();
+  await expect(page.getByLabel('Full name')).toHaveValue('FlyScanner Profile QA');
+  await expect(page.getByLabel('Mobile number')).toHaveValue('+91 98765 43210');
+  await expect(page.getByLabel('Date of birth')).toHaveValue('1990-06-15');
+  await expect(page.getByLabel('Nationality (2-letter country code)')).toHaveValue('IN');
+  await expect(page.getByLabel('Home airport (IATA code)')).toHaveValue('BLR');
+  await expect(page.getByLabel('Preferred currency')).toHaveValue('INR');
 });
 
 
