@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test') {
+async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test'): Promise<string[]> {
+  const capturedRequestUrls: string[] = [];
   let profile = {
     userId: 'test-user-1',
     email,
@@ -11,6 +12,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
 
   await page.route('**/api/v1/auth/**', async (route) => {
     const request = route.request();
+    capturedRequestUrls.push(request.url());
     const method = request.method();
     const url = new URL(request.url());
     if (url.pathname.endsWith('/me') && method === 'GET') {
@@ -39,6 +41,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
     }
     await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'Not found' }) });
   });
+  return capturedRequestUrls;
 }
 test('homepage opens with a prominent search action', async ({ page }) => {
   await page.goto('/');
@@ -304,6 +307,29 @@ test('backend flight search renders API offers, partial provider status and deta
   expect(capturedRequests.every((request) => request.tripType === 'ONE_WAY')).toBe(true);
 });
 
+
+
+test('login, profile and logout requests use the configured Codespaces backend URL', async ({ page }) => {
+  const requestUrls = await mockAccountApi(page);
+  const backendOrigin = 'https://probable-couscous-q4vv44qgjw424pqw-8080.app.github.dev';
+
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
+  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await expect(page).toHaveURL(/\\/account$/);
+  await expect(page.getByRole('button', { name: /Sign out/i })).toBeVisible();
+
+  await page.getByRole('button', { name: /Sign out/i }).click();
+  await expect(page).toHaveURL('/');
+
+  const requestedUrls = requestUrls.map((url) => new URL(url));
+  expect(requestedUrls.length).toBeGreaterThanOrEqual(3);
+  expect(requestedUrls.every((url) => url.origin === backendOrigin)).toBe(true);
+  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/login')).toBe(true);
+  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/me')).toBe(true);
+  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/logout')).toBe(true);
+});
 
 test('logout revokes the bearer session and clears the browser session on every device profile', async ({ page }) => {
   await mockAccountApi(page);

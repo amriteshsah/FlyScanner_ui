@@ -16,7 +16,7 @@ Requirements: Node.js 20.19+ (Node.js 22 LTS recommended).
 npm install
 npm run dev
 
-Open the Vite URL printed in the terminal (normally http://localhost:5173).
+Open the Vite URL printed in the terminal (normally http://localhost:5173). Vite loads the checked-in `.env.development` automatically, which points browser API calls to the separate Spring Boot Codespace. Restart Vite after changing this file.
 
 ## Validate and build
 
@@ -90,14 +90,14 @@ npm run test:e2e
 The iPhone profile runs WebKit with an iPhone viewport. It provides compatibility coverage but does not replace testing on physical iOS Safari and Android Chrome devices.
 
 
-## Demo account, saved flights and travel dashboard
+## Account authentication and travel dashboard
 
 Routes:
-- \`/login\` — demo sign-in
-- \`/register\` — demo registration
+- \`/login\` — backend sign-in via \`POST /api/v1/auth/login\`
+- \`/register\` — backend registration via \`POST /api/v1/auth/register\`
 - \`/forgot-password\` — password recovery confirmation UI
 - \`/account\` — travel dashboard with Overview, Saved flights, My trips, Price alerts and Profile
 
-The shared header links to Explore from the homepage and all other pages. Saved-flight actions on the homepage, search results and flight details use the same browser-local store. Demo profile changes, saved flights and price-alert records persist in browser local storage.
+The shared header links to Explore from the homepage and all other pages. Login stores the opaque bearer token in tab-scoped \`sessionStorage\`, then retrieves the profile from \`GET /api/v1/auth/me\`. Profile updates use \`PATCH /api/v1/auth/me\`, and logout calls \`POST /api/v1/auth/logout\`. Saved flights and price-alert UI data remain browser-local demo features.
 
-**Security and integration boundary:** This is a frontend prototype. It does not authenticate users with a server, hash or verify passwords, send password recovery email, monitor live fares, send notifications, or store user records securely. Do not use real personal information or real passwords in this demo. Replace \`mockAccountStore.ts\` with backend authentication and account APIs before public production use.
+**Security and integration boundary:** Authentication is connected to the Spring Boot API for registration, login, profile retrieval/update and logout. Saved flights and price-alert UI data are still browser-local; password reset, email verification and real notification delivery are not implemented.

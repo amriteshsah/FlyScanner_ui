@@ -19,7 +19,7 @@ type ProblemResponse = {
   title?: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 const ACCESS_TOKEN_KEY = 'flyscanner.auth.access-token';
 const PROFILE_KEY = 'flyscanner.auth.profile';
 
@@ -65,7 +65,7 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
 
   let response: Response;
   try {
-    response = await fetch(API_BASE_URL + path, { ...init, headers, credentials: 'same-origin' });
+    response = await fetch(API_BASE_URL + path, { ...init, headers, credentials: 'omit' });
   } catch {
     throw new Error('Could not reach FlyScanner. Check that the backend is running and try again.');
   }
