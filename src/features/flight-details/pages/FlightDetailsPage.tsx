@@ -115,7 +115,7 @@ export default function FlightDetailsPage() {
               </div>
               <div className="detail-heading-actions">
                 <button type="button" className={flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'detail-save-button saved' : 'detail-save-button'} onClick={() => void toggleSaved()} disabled={saving} aria-pressed={Boolean(flight && savedFlights.some((item) => item.offerToken === flight.offerToken))}>
-                  <Heart size={16} fill={flight && savedIds.includes(flight.id) ? 'currentColor' : 'none'} />
+                  <Heart size={16} fill={flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'currentColor' : 'none'} />
                   {flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'Saved' : 'Save flight'}
                 </button>
                 <span className="detail-demo-tag"><ShieldCheck size={15} /> Sample offer</span>
