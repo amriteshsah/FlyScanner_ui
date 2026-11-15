@@ -16,6 +16,7 @@ import {
 } from '../services/mockAccountStore';
 import {
   type UserProfile,
+  type UpdateProfilePayload,
   getCachedProfile,
   getProfile,
   logout,
@@ -59,6 +60,12 @@ export default function AccountDashboardPage() {
   const [savedFlights, setSavedFlights] = useState<SavedFlight[]>(() => getSavedFlights());
   const [alerts, setAlerts] = useState<PriceAlert[]>(() => getPriceAlerts());
   const [name, setName] = useState(user?.fullName ?? '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber ?? '');
+  const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ?? '');
+  const [nationality, setNationality] = useState(user?.nationality ?? '');
+  const [homeAirport, setHomeAirport] = useState(user?.homeAirport ?? '');
+  const [preferredCurrency, setPreferredCurrency] = useState(user?.preferredCurrency ?? 'INR');
+  const [savingProfile, setSavingProfile] = useState(false);
   const [origin, setOrigin] = useState('BLR');
   const [destination, setDestination] = useState('DXB');
   const [targetPrice, setTargetPrice] = useState('12000');
@@ -72,6 +79,11 @@ export default function AccountDashboardPage() {
         if (!active) return;
         setUser(profile);
         setName(profile.fullName);
+        setPhoneNumber(profile.phoneNumber ?? '');
+        setDateOfBirth(profile.dateOfBirth ?? '');
+        setNationality(profile.nationality ?? '');
+        setHomeAirport(profile.homeAirport ?? '');
+        setPreferredCurrency(profile.preferredCurrency ?? 'INR');
       })
       .catch(() => {
         if (active) navigate('/login?next=%2Faccount', { replace: true });
@@ -125,13 +137,31 @@ export default function AccountDashboardPage() {
       setError('Please enter a name with at least two characters.');
       return;
     }
+
+    const payload: UpdateProfilePayload = {
+      fullName: name.trim(),
+      phoneNumber: phoneNumber.trim() || null,
+      dateOfBirth: dateOfBirth || null,
+      nationality: nationality.trim().toUpperCase() || null,
+      homeAirport: homeAirport.trim().toUpperCase() || null,
+      preferredCurrency: preferredCurrency.trim().toUpperCase() || null,
+    };
+
+    setSavingProfile(true);
     try {
-      const updated = await updateProfile(name.trim());
+      const updated = await updateProfile(payload);
       setUser(updated);
       setName(updated.fullName);
-      setNotice('Your profile has been updated.');
+      setPhoneNumber(updated.phoneNumber ?? '');
+      setDateOfBirth(updated.dateOfBirth ?? '');
+      setNationality(updated.nationality ?? '');
+      setHomeAirport(updated.homeAirport ?? '');
+      setPreferredCurrency(updated.preferredCurrency ?? 'INR');
+      setNotice('Your profile has been saved to your FlyScanner account.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to update your profile.');
+    } finally {
+      setSavingProfile(false);
     }
   }
 
@@ -239,14 +269,48 @@ export default function AccountDashboardPage() {
                 <div className="account-content-heading"><div><span className="eyebrow">ACCOUNT DETAILS</span><h2>Profile</h2><p>Manage the details stored securely in your FlyScanner account.</p></div></div>
                 <div className="account-panel profile-panel">
                   <form className="profile-form" onSubmit={saveProfile}>
-                    <label>Full name<input type="text" required minLength={2} value={name} onChange={(event) => setName(event.target.value)} /></label>
-                    <label>Email address<input type="email" value={user.email} disabled /></label>
+                    <div className="profile-fields-grid">
+                      <label>Full name
+                        <input type="text" autoComplete="name" required minLength={2} maxLength={200}
+                          value={name} onChange={(event) => setName(event.target.value)} />
+                      </label>
+                      <label>Email address
+                        <input type="email" autoComplete="email" value={user.email} disabled />
+                      </label>
+                      <label>Mobile number
+                        <input type="tel" autoComplete="tel" maxLength={25}
+                          pattern="^\\+?[0-9 ()-]{7,20}$"
+                          placeholder="+91 98765 43210"
+                          value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} />
+                      </label>
+                      <label>Date of birth
+                        <input type="date" autoComplete="bday" max={new Date().toISOString().slice(0, 10)}
+                          value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} />
+                      </label>
+                      <label>Nationality (2-letter country code)
+                        <input type="text" autoComplete="country" maxLength={2} pattern="[A-Za-z]{2}"
+                          placeholder="IN" value={nationality}
+                          onChange={(event) => setNationality(event.target.value.toUpperCase())} />
+                      </label>
+                      <label>Home airport (IATA code)
+                        <input type="text" maxLength={3} pattern="[A-Za-z]{3}" placeholder="BLR"
+                          value={homeAirport}
+                          onChange={(event) => setHomeAirport(event.target.value.toUpperCase())} />
+                      </label>
+                      <label>Preferred currency
+                        <input type="text" maxLength={3} pattern="[A-Za-z]{3}" placeholder="INR"
+                          value={preferredCurrency}
+                          onChange={(event) => setPreferredCurrency(event.target.value.toUpperCase())} />
+                      </label>
+                    </div>
                     <div className="profile-meta"><span>Account created</span><strong>{dateLabel(user.createdAt.slice(0, 10))}</strong></div>
-                    <button className="account-primary-button" type="submit">Save changes <Check size={15} /></button>
+                    <button className="account-primary-button" type="submit" disabled={savingProfile}>
+                      {savingProfile ? 'Saving profile…' : 'Save changes'} {!savingProfile && <Check size={15} />}
+                    </button>
                   </form>
                   {error && <p className="account-form-error" role="alert">{error}</p>}
                 </div>
-                <div className="account-privacy-note"><ShieldCheck size={17} /><span><strong>Server-managed account</strong><small>Your name, email address and account role are loaded from the FlyScanner backend. Email changes and password recovery require a verified-email flow and are not enabled yet.</small></span></div>
+                <div className="account-privacy-note"><ShieldCheck size={17} /><span><strong>Private traveler profile</strong><small>Your traveler details are saved against your signed-in account. Your email and account role are managed by the server and cannot be changed from this form.</small></span></div>
               </>
             )}
           </section>
