@@ -279,7 +279,7 @@ export default function AccountDashboardPage() {
                       </label>
                       <label>Mobile number
                         <input type="tel" autoComplete="tel" maxLength={25}
-                          pattern="^\\+?[0-9 ()-]{7,20}$"
+                          pattern="^\+?[0-9 ()-]{7,20}$"
                           placeholder="+91 98765 43210"
                           value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} />
                       </label>
