@@ -15,7 +15,6 @@ import {
 import AirportAutocomplete from './features/flight-search/components/AirportAutocomplete';
 import { createFlightSearchQuery } from './features/flight-search/utils/searchQuery';
 import SiteHeader from './components/layout/SiteHeader';
-import { getSavedFlights, toggleSavedFlight } from './features/account/services/mockAccountStore';
 
 type TripType = 'Round trip' | 'One way';
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
@@ -57,7 +56,6 @@ function App() {
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [maxFare, setMaxFare] = useState(50000);
-  const [savedFlights, setSavedFlights] = useState<number[]>(() => getSavedFlights().map((flight) => flight.id));
 
   useEffect(() => {
     let active = true;
@@ -156,12 +154,8 @@ function App() {
       : [...current, period]);
   }
 
-  function toggleSaved(id: number) {
-    const flight = searchResults.find((item) => item.id === id);
-    if (!flight) return;
-    const updated = toggleSavedFlight(flight);
-    setSavedFlights(updated.map((item) => item.id));
-    showNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
+  function toggleSaved() {
+    showNotice('These featured options are sample demo data. Run a specific flight search to save a backend offer to your account.');
   }
 
   function showNotice(message: string) {
@@ -345,7 +339,7 @@ function App() {
                       {flight.carbonIndex === 'low' && <span className="carbon-tag"><Check size={12} /> Lower emissions · demo estimate</span>}
                     </div>
                   )}
-                  <button className={savedFlights.includes(flight.id) ? 'save-flight saved' : 'save-flight'} onClick={() => toggleSaved(flight.id)} aria-label={savedFlights.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={savedFlights.includes(flight.id)}><Heart size={17} fill={savedFlights.includes(flight.id) ? 'currentColor' : 'none'} /></button>
+                  <button className="save-flight" type="button" onClick={toggleSaved} aria-label="About saving featured sample flights" title="Search a specific route to save a real backend offer"><Heart size={17} /></button>
                 </article>
               ))}
               {results.length === 0 && (
