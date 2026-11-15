@@ -317,7 +317,7 @@ test('login, profile and logout requests use the configured Codespaces backend U
   await page.getByLabel('Email address').fill('tester@flyscanner.test');
   await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
   await page.getByRole('button', { name: /^Sign in/ }).click();
-  await expect(page).toHaveURL(/\\/account$/);
+  await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('button', { name: /Sign out/i })).toBeVisible();
 
   await page.getByRole('button', { name: /Sign out/i }).click();
