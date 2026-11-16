@@ -135,6 +135,43 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
       });
       return;
     }
+    if (url.pathname.endsWith('/otp/request') && method === 'POST') {
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'If an account exists for this email, a sign-in code has been sent.',
+          expiresAt: new Date(Date.now() + 300000).toISOString(),
+          resendAvailableAt: new Date(Date.now() + 180000).toISOString(),
+        }),
+      });
+      return;
+    }
+    if (url.pathname.endsWith('/otp/resend') && method === 'POST') {
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'If an account exists for this email, a sign-in code has been sent.',
+          expiresAt: new Date(Date.now() + 300000).toISOString(),
+          resendAvailableAt: new Date(Date.now() + 180000).toISOString(),
+        }),
+      });
+      return;
+    }
+    if (url.pathname.endsWith('/otp/verify') && method === 'POST') {
+      const body = request.postDataJSON() as { email: string; code: string };
+      if (body.code !== '123456') {
+        await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ detail: 'The sign-in code is invalid or expired.' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: profile.userId, email: profile.email, fullName: profile.fullName, accessToken: 'mock-test-otp-access-token', expiresAt: '2026-11-16T10:00:00Z' }),
+      });
+      return;
+    }
     if (url.pathname.endsWith('/logout') && method === 'POST') {
       await route.fulfill({ status: 204 });
       return;
