@@ -328,7 +328,7 @@ test('email OTP login verifies a six-digit code and establishes an account sessi
   await page.getByLabel('Six-digit email code').fill('123456');
   await page.getByRole('button', { name: /Verify code & sign in/i }).click();
 
-  await expect(page).toHaveURL(/\\/account$/);
+  await expect(page).toHaveURL('http://127.0.0.1:5173/account');
   await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
   expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/request'))).toBe(true);
   expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/verify'))).toBe(true);
