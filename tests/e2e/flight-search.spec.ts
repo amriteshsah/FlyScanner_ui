@@ -315,6 +315,25 @@ test('registration creates a backend account and opens the dashboard', async ({ 
   await expect(page.getByText('USER account')).toBeVisible();
 });
 
+test('email OTP login verifies a six-digit code and establishes an account session', async ({ page }) => {
+  const requestUrls = await mockAccountApi(page);
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Email OTP', exact: true }).click();
+  await page.getByLabel('Email address').fill('tester@flyscanner.test');
+  await page.getByRole('button', { name: /Send sign-in code/i }).click();
+
+  await expect(page.getByLabel('Six-digit email code')).toBeVisible();
+  await expect(page.getByText(/Code expires in/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Resend code in/ })).toBeDisabled();
+  await page.getByLabel('Six-digit email code').fill('123456');
+  await page.getByRole('button', { name: /Verify code & sign in/i }).click();
+
+  await expect(page).toHaveURL(/\\/account$/);
+  await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
+  expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/request'))).toBe(true);
+  expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/verify'))).toBe(true);
+});
+
 test('sign-in and account price alerts can be created and removed', async ({ page }) => {
   await mockAccountApi(page);
   await page.goto('/login');
