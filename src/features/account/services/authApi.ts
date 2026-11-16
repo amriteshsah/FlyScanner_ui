@@ -130,6 +130,47 @@ export function register(fullName: string, email: string, password: string): Pro
   return establishSession('/api/v1/auth/register', { fullName, email, password });
 }
 
+export type EmailOtpRequestResponse = {
+  message: string;
+  expiresAt: string;
+  resendAvailableAt: string;
+};
+
+export function requestEmailOtp(email: string): Promise<EmailOtpRequestResponse> {
+  return request<EmailOtpRequestResponse>('/api/v1/auth/otp/request', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  }, false);
+}
+
+export function resendEmailOtp(email: string): Promise<EmailOtpRequestResponse> {
+  return request<EmailOtpRequestResponse>('/api/v1/auth/otp/resend', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  }, false);
+}
+
+export function verifyEmailOtp(email: string, code: string): Promise<UserProfile> {
+  return establishOtpSession(email, code);
+}
+
+async function establishOtpSession(email: string, code: string): Promise<UserProfile> {
+  const result = await request<AuthenticationResponse>('/api/v1/auth/otp/verify', {
+    method: 'POST',
+    body: JSON.stringify({ email, code }),
+  }, false);
+
+  try {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, result.accessToken);
+    const profile = await getProfile();
+    writeSession(result.accessToken, profile);
+    return profile;
+  } catch (error) {
+    clearSession();
+    throw error;
+  }
+}
+
 export async function getProfile(): Promise<UserProfile> {
   const profile = await request<UserProfile>('/api/v1/auth/me');
   const token = readToken();
