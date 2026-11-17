@@ -211,6 +211,42 @@ test('airport suggestions support a complete route search and detail navigation'
   await expect(page.getByText('PRICE SUMMARY')).toBeVisible();
 });
 
+test('mobile homepage presents the flight search before decorative hero art', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const intro = page.locator('.hero-copy');
+  const searchPanel = page.locator('.search-panel');
+  const heroArt = page.locator('.hero-art');
+  const searchButton = page.getByRole('button', { name: /Search flights/i });
+
+  await expect(intro).toBeVisible();
+  await expect(searchPanel).toBeVisible();
+  await expect(searchButton).toBeVisible();
+
+  const positions = await page.evaluate(() => {
+    const introElement = document.querySelector('.hero-copy');
+    const panelElement = document.querySelector('.search-panel');
+    const artElement = document.querySelector('.hero-art');
+    const buttonElement = document.querySelector('.search-button');
+    if (!introElement || !panelElement || !artElement || !buttonElement) {
+      throw new Error('Homepage hero or search elements are missing');
+    }
+    return {
+      introBottom: introElement.getBoundingClientRect().bottom,
+      searchTop: panelElement.getBoundingClientRect().top,
+      searchButtonBottom: buttonElement.getBoundingClientRect().bottom,
+      artTop: artElement.getBoundingClientRect().top,
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  expect(positions.searchTop).toBeGreaterThanOrEqual(positions.introBottom);
+  expect(positions.searchTop).toBeLessThan(positions.viewportHeight);
+  expect(positions.searchButtonBottom).toBeLessThan(positions.viewportHeight);
+  expect(positions.artTop).toBeGreaterThan(positions.searchTop);
+});
+
 test('mobile layout does not create horizontal page overflow', async ({ page }) => {
   await page.goto('/');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
