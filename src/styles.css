@@ -811,29 +811,29 @@ input,select{accent-color:#2865e9}
 
 /* Small screens: the search is the first task, not the last item after the hero. */
 @media (max-width: 760px) {
-  main {
+  .app-shell > main {
     display: flex;
     flex-direction: column;
   }
-  main > .hero {
+  .app-shell > main > .hero {
     display: contents;
   }
-  main > .search-panel {
+  .app-shell > main > .search-panel {
     order: 0;
     margin: 8px 0 20px;
     padding: 17px 13px 13px;
   }
-  main > .hero-copy {
+  .app-shell > main > .hero > .hero-copy {
     order: 1;
     padding: 12px 0 0;
     margin: 0;
   }
-  main > .hero-art {
+  .app-shell > main > .hero > .hero-art {
     order: 2;
     height: 145px;
     margin: 14px 0 28px;
   }
-  main > .results-section {
+  .app-shell > main > .results-section {
     order: 3;
   }
   .search-intro {
@@ -868,7 +868,7 @@ input,select{accent-color:#2865e9}
 }
 
 @media (max-width: 560px) {
-  main > .search-panel {
+  .app-shell > main > .search-panel {
     margin-top: 5px;
   }
   .search-intro h2 {
