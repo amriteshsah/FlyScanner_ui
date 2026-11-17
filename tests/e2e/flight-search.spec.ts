@@ -211,40 +211,37 @@ test('airport suggestions support a complete route search and detail navigation'
   await expect(page.getByText('PRICE SUMMARY')).toBeVisible();
 });
 
-test('mobile homepage presents the flight search before decorative hero art', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('mobile homepage puts the flight search first and keeps its action above the fold', async ({ page }) => {
+  await page.setViewportSize({ width: 553, height: 574 });
   await page.goto('/');
 
-  const intro = page.locator('.hero-copy');
   const searchPanel = page.locator('.search-panel');
-  const heroArt = page.locator('.hero-art');
   const searchButton = page.getByRole('button', { name: /Search flights/i });
-
-  await expect(intro).toBeVisible();
   await expect(searchPanel).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Where would you like to go?' })).toBeVisible();
   await expect(searchButton).toBeVisible();
 
   const positions = await page.evaluate(() => {
-    const introElement = document.querySelector('.hero-copy');
-    const panelElement = document.querySelector('.search-panel');
-    const artElement = document.querySelector('.hero-art');
-    const buttonElement = document.querySelector('.search-button');
-    if (!introElement || !panelElement || !artElement || !buttonElement) {
-      throw new Error('Homepage hero or search elements are missing');
+    const panel = document.querySelector('.search-panel');
+    const button = document.querySelector('.search-button');
+    const intro = document.querySelector('.hero-copy');
+    const art = document.querySelector('.hero-art');
+    if (!panel || !button || !intro || !art) {
+      throw new Error('Homepage search and hero elements are missing');
     }
     return {
-      introBottom: introElement.getBoundingClientRect().bottom,
-      searchTop: panelElement.getBoundingClientRect().top,
-      searchButtonBottom: buttonElement.getBoundingClientRect().bottom,
-      artTop: artElement.getBoundingClientRect().top,
+      panelTop: panel.getBoundingClientRect().top,
+      buttonBottom: button.getBoundingClientRect().bottom,
+      introTop: intro.getBoundingClientRect().top,
+      artTop: art.getBoundingClientRect().top,
       viewportHeight: window.innerHeight,
     };
   });
 
-  expect(positions.searchTop).toBeGreaterThanOrEqual(positions.introBottom);
-  expect(positions.searchTop).toBeLessThan(positions.viewportHeight);
-  expect(positions.searchButtonBottom).toBeLessThan(positions.viewportHeight);
-  expect(positions.artTop).toBeGreaterThan(positions.searchTop);
+  expect(positions.panelTop).toBeLessThan(110);
+  expect(positions.buttonBottom).toBeLessThan(positions.viewportHeight);
+  expect(positions.introTop).toBeGreaterThan(positions.panelTop);
+  expect(positions.artTop).toBeGreaterThan(positions.introTop);
 });
 
 test('mobile layout does not create horizontal page overflow', async ({ page }) => {

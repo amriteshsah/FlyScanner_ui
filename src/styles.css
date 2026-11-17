@@ -770,3 +770,124 @@ input,select{accent-color:#2865e9}
 .profile-onboarding-skip:hover{color:#2563eb}
 .profile-onboarding-card>small{display:block;margin-top:15px;color:#8a95a7;font-size:11px}
 @media(max-width:560px){.profile-onboarding-card{padding:22px 18px;border-radius:16px}.profile-onboarding-card h2{font-size:24px}.profile-onboarding-actions{align-items:stretch;flex-direction:column;gap:4px}.profile-onboarding-skip{align-self:center}}
+
+
+/* Homepage: bring the primary flight-search action into the first viewport. */
+@media (min-width: 761px) {
+  .hero {
+    min-height: 0;
+    padding: 30px 0 20px;
+    gap: 34px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 4vw, 54px);
+    margin: 12px 0 10px;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .trust-row {
+    margin-top: 15px;
+  }
+  .hero-art {
+    height: 218px;
+  }
+  .search-panel {
+    margin-bottom: 48px;
+    padding-top: 19px;
+  }
+  .field {
+    height: 76px;
+  }
+  .search-button {
+    height: 76px;
+    min-height: 76px;
+  }
+  .search-intro {
+    display: none;
+  }
+}
+
+/* Small screens: the search is the first task, not the last item after the hero. */
+@media (max-width: 760px) {
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+  main > .hero {
+    display: contents;
+  }
+  main > .search-panel {
+    order: 0;
+    margin: 8px 0 20px;
+    padding: 17px 13px 13px;
+  }
+  main > .hero-copy {
+    order: 1;
+    padding: 12px 0 0;
+    margin: 0;
+  }
+  main > .hero-art {
+    order: 2;
+    height: 145px;
+    margin: 14px 0 28px;
+  }
+  main > .results-section {
+    order: 3;
+  }
+  .search-intro {
+    display: block;
+    margin-bottom: 12px;
+  }
+  .search-intro h2 {
+    margin: 5px 0 0;
+    color: #17243d;
+    font: 800 20px/1.2 Manrope, sans-serif;
+    letter-spacing: -.55px;
+  }
+  .search-top {
+    margin-bottom: 12px;
+  }
+  .search-panel .panel-foot {
+    margin-top: 10px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    line-height: 1.05;
+    margin: 9px 0 8px;
+  }
+  .hero-copy > p {
+    max-width: 520px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .trust-row {
+    margin-top: 11px;
+  }
+}
+
+@media (max-width: 560px) {
+  main > .search-panel {
+    margin-top: 5px;
+  }
+  .search-intro h2 {
+    font-size: 19px;
+  }
+  .search-panel .search-note {
+    line-height: 1.35;
+  }
+}
+
+@media (max-height: 650px) and (min-width: 761px) {
+  .hero {
+    padding-top: 18px;
+    padding-bottom: 12px;
+  }
+  .hero-art {
+    height: 180px;
+  }
+  .search-panel {
+    margin-bottom: 34px;
+  }
+}

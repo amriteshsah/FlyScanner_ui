@@ -187,6 +187,10 @@ function App() {
         </section>
 
         <section className="search-panel" aria-label="Flight search">
+          <div className="search-intro">
+            <span className="eyebrow dark-eyebrow">PLAN YOUR NEXT TRIP</span>
+            <h2>Where would you like to go?</h2>
+          </div>
           <div className="search-top">
             <div className="trip-tabs" role="group" aria-label="Trip type">
               {(['Round trip', 'One way'] as TripType[]).map((item) => (
