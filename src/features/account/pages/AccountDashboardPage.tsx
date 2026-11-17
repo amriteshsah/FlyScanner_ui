@@ -70,6 +70,7 @@ export default function AccountDashboardPage() {
   const [homeAirport, setHomeAirport] = useState(user?.homeAirport ?? '');
   const [preferredCurrency, setPreferredCurrency] = useState(user?.preferredCurrency ?? 'INR');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [origin, setOrigin] = useState('BLR');
   const [destination, setDestination] = useState('DXB');
   const [targetPrice, setTargetPrice] = useState('12000');
@@ -93,6 +94,7 @@ export default function AccountDashboardPage() {
       .then((profile) => {
         if (!active) return;
         setUser(profile);
+        setShowOnboarding(!profile.profileCompleted);
         setName(profile.fullName);
         setPhoneNumber(profile.phoneNumber ?? '');
         setDateOfBirth(profile.dateOfBirth ?? '');
@@ -179,13 +181,13 @@ export default function AccountDashboardPage() {
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (name.trim().length < 2) {
-      setError('Please enter a name with at least two characters.');
+    if (name.trim().length === 1) {
+      setError('Enter at least two characters for your name, or leave it blank.');
       return;
     }
 
     const payload: UpdateProfilePayload = {
-      fullName: name.trim(),
+      fullName: name.trim() || null,
       phoneNumber: phoneNumber.trim() || null,
       dateOfBirth: dateOfBirth || null,
       nationality: nationality.trim().toUpperCase() || null,
@@ -197,6 +199,7 @@ export default function AccountDashboardPage() {
     try {
       const updated = await updateProfile(payload);
       setUser(updated);
+      setShowOnboarding(false);
       setName(updated.fullName);
       setPhoneNumber(updated.phoneNumber ?? '');
       setDateOfBirth(updated.dateOfBirth ?? '');
@@ -206,6 +209,21 @@ export default function AccountDashboardPage() {
       setNotice('Your profile has been saved to your FlyScanner account.');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to update your profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  async function skipProfileOnboarding() {
+    setError('');
+    setSavingProfile(true);
+    try {
+      const updated = await updateProfile({});
+      setUser(updated);
+      setShowOnboarding(false);
+      setNotice('You can update your traveler profile at any time.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to continue without profile details.');
     } finally {
       setSavingProfile(false);
     }
@@ -228,6 +246,39 @@ export default function AccountDashboardPage() {
   return (
     <div className="page-shell account-page">
       <SiteHeader onAction={setNotice} />
+      {showOnboarding && (
+        <div className="profile-onboarding-backdrop">
+          <section className="profile-onboarding-card" role="dialog" aria-modal="true" aria-labelledby="profile-onboarding-title">
+            <span className="eyebrow">WELCOME TO FLYSCANNER</span>
+            <h2 id="profile-onboarding-title">Complete your profile</h2>
+            <p>Add a few optional details to make your travel experience more personal. You can add or change these later.</p>
+            <form className="profile-onboarding-form" onSubmit={saveProfile}>
+              <label>Full name (optional)
+                <input type="text" autoComplete="name" maxLength={200}
+                  value={name} onChange={(event) => setName(event.target.value)} />
+              </label>
+              <label>Mobile number (optional)
+                <input type="tel" autoComplete="tel" maxLength={25}
+                  pattern="^\\+?[0-9 ()-]{7,20}$" placeholder="+91 98765 43210"
+                  value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} />
+              </label>
+              <label>Date of birth (optional)
+                <input type="date" autoComplete="bday" max={new Date().toISOString().slice(0, 10)}
+                  value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} />
+              </label>
+              <div className="profile-onboarding-actions">
+                <button className="account-primary-button" type="submit" disabled={savingProfile}>
+                  {savingProfile ? 'Saving…' : 'Save & Continue'} {!savingProfile && <Check size={15} />}
+                </button>
+                <button className="profile-onboarding-skip" type="button" disabled={savingProfile}
+                  onClick={() => void skipProfileOnboarding()}>Skip for now</button>
+              </div>
+            </form>
+            {error && <p className="account-form-error" role="alert">{error}</p>}
+            <small>You can update your traveler details later from Profile.</small>
+          </section>
+        </div>
+      )}
       <main className="account-main">
         <section className="account-welcome">
           <div>
@@ -325,7 +376,7 @@ export default function AccountDashboardPage() {
                   <form className="profile-form" onSubmit={saveProfile}>
                     <div className="profile-fields-grid">
                       <label>Full name
-                        <input type="text" autoComplete="name" required minLength={2} maxLength={200}
+                        <input type="text" autoComplete="name" maxLength={200}
                           value={name} onChange={(event) => setName(event.target.value)} />
                       </label>
                       <label>Email address
