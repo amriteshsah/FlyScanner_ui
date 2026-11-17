@@ -37,7 +37,7 @@ type ProblemResponse = {
   correlationId?: string;
 };
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(new RegExp('/+$'), '');
 const ACCESS_TOKEN_KEY = 'flyscanner.auth.access-token';
 const PROFILE_KEY = 'flyscanner.auth.profile';
 
