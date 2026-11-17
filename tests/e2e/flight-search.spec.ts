@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test'): Promise<string[]> {
+async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', email = 'tester@flyscanner.test', profileCompleted = true): Promise<string[]> {
   const capturedRequestUrls: string[] = [];
   let savedFlights: Array<Record<string, unknown>> = [];
   let priceAlerts: Array<Record<string, unknown>> = [];
@@ -85,6 +85,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
     fullName: string;
     role: 'USER';
     createdAt: string;
+    profileCompleted: boolean;
     phoneNumber: string | null;
     dateOfBirth: string | null;
     nationality: string | null;
@@ -96,6 +97,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
     fullName: initialName,
     role: 'USER',
     createdAt: '2026-11-14T10:00:00Z',
+    profileCompleted,
     phoneNumber: null,
     dateOfBirth: null,
     nationality: null,
@@ -121,18 +123,8 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
         homeAirport: string | null;
         preferredCurrency: string | null;
       };
-      profile = { ...profile, ...body };
+      profile = { ...profile, ...body, profileCompleted: true };
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(profile) });
-      return;
-    }
-    if ((url.pathname.endsWith('/register') || url.pathname.endsWith('/login')) && method === 'POST') {
-      const body = request.postDataJSON() as { fullName?: string; email?: string };
-      profile = { ...profile, email: body.email ?? profile.email, fullName: body.fullName ?? profile.fullName };
-      await route.fulfill({
-        status: url.pathname.endsWith('/register') ? 201 : 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ userId: profile.userId, email: profile.email, fullName: profile.fullName, accessToken: 'mock-test-access-token', expiresAt: '2026-11-15T10:00:00Z' }),
-      });
       return;
     }
     if (url.pathname.endsWith('/otp/request') && method === 'POST') {
@@ -140,7 +132,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
         status: 202,
         contentType: 'application/json',
         body: JSON.stringify({
-          message: 'If an account exists for this email, a sign-in code has been sent.',
+          message: 'If this email address is eligible, a sign-in code has been sent.',
           expiresAt: new Date(Date.now() + 300000).toISOString(),
           resendAvailableAt: new Date(Date.now() + 180000).toISOString(),
         }),
@@ -152,7 +144,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
         status: 202,
         contentType: 'application/json',
         body: JSON.stringify({
-          message: 'If an account exists for this email, a sign-in code has been sent.',
+          message: 'If this email address is eligible, a sign-in code has been sent.',
           expiresAt: new Date(Date.now() + 300000).toISOString(),
           resendAvailableAt: new Date(Date.now() + 180000).toISOString(),
         }),
@@ -168,7 +160,7 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ userId: profile.userId, email: profile.email, fullName: profile.fullName, accessToken: 'mock-test-otp-access-token', expiresAt: '2026-11-16T10:00:00Z' }),
+        body: JSON.stringify({ userId: profile.userId, email: profile.email, fullName: profile.fullName, accessToken: 'mock-test-otp-access-token', expiresAt: '2026-11-16T10:00:00Z', isNewUser: !profile.profileCompleted, profileCompleted: profile.profileCompleted }),
       });
       return;
     }
@@ -180,6 +172,15 @@ async function mockAccountApi(page: Page, initialName = 'FlyScanner Tester', ema
   });
   return capturedRequestUrls;
 }
+async function signInWithOtp(page: Page, email = 'tester@flyscanner.test') {
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByRole('button', { name: /Send sign-in code/i }).click();
+  await expect(page.getByLabel('Six-digit email code')).toBeVisible();
+  await page.getByLabel('Six-digit email code').fill('123456');
+  await page.getByRole('button', { name: /Verify code/i }).click();
+}
+
 test('homepage opens with a prominent search action', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Go further/i })).toBeVisible();
@@ -302,44 +303,30 @@ test('Explore direct entry and refresh load all sections without flight search s
   await expect(page.getByRole('button', { name: /Retry loading Explore/i })).toHaveCount(0);
 });
 
-test('registration creates a backend account and opens the dashboard', async ({ page }) => {
-  await mockAccountApi(page);
-  await page.goto('/register');
-  await page.getByLabel('Full name').fill('FlyScanner Tester');
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.getByLabel('Password', { exact: true }).fill('TestPass123!');
-  await page.getByLabel('Confirm password').fill('TestPass123!');
-  await page.getByRole('button', { name: /Create account/i }).click();
-  await expect(page).toHaveURL(/\/account$/);
+test('new OTP users can skip optional profile completion', async ({ page }) => {
+  await mockAccountApi(page, 'FlyScanner Tester', 'tester@flyscanner.test', false);
+  await signInWithOtp(page);
+  await expect(page).toHaveURL(/\/account(?:\?onboarding=1)?$/);
+  await expect(page.getByRole('dialog', { name: /Complete your profile/i })).toBeVisible();
+  await page.getByRole('button', { name: /Skip for now/i }).click();
+  await expect(page.getByRole('dialog', { name: /Complete your profile/i })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
   await expect(page.getByText('USER account')).toBeVisible();
 });
 
 test('email OTP login verifies a six-digit code and establishes an account session', async ({ page }) => {
   const requestUrls = await mockAccountApi(page);
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Email OTP', exact: true }).click();
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.getByRole('button', { name: /Send sign-in code/i }).click();
-
-  await expect(page.getByLabel('Six-digit email code')).toBeVisible();
-  await expect(page.getByText(/Code expires in/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /Resend code in/ })).toBeDisabled();
-  await page.getByLabel('Six-digit email code').fill('123456');
-  await page.getByRole('button', { name: /Verify code & sign in/i }).click();
-
-  await expect(page).toHaveURL('http://127.0.0.1:5173/account');
+  await signInWithOtp(page);
+  await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('heading', { name: 'Hello, FlyScanner.' })).toBeVisible();
   expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/request'))).toBe(true);
   expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/otp/verify'))).toBe(true);
+  expect(requestUrls.some((url) => url.endsWith('/api/v1/auth/login'))).toBe(false);
 });
 
 test('sign-in and account price alerts can be created and removed', async ({ page }) => {
   await mockAccountApi(page);
-  await page.goto('/login');
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
-  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await signInWithOtp(page);
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Price alerts', exact: true }).click();
   await page.getByLabel('Target fare (INR)').fill('11500');
@@ -351,12 +338,7 @@ test('sign-in and account price alerts can be created and removed', async ({ pag
 
 test('saved flight persists from results page into the account dashboard', async ({ page }) => {
   await mockAccountApi(page, 'Saved Flight Tester', 'saved@flyscanner.test');
-  await page.goto('/register');
-  await page.getByLabel('Full name').fill('Saved Flight Tester');
-  await page.getByLabel('Email address').fill('saved@flyscanner.test');
-  await page.getByLabel('Password', { exact: true }).fill('TestPass123!');
-  await page.getByLabel('Confirm password').fill('TestPass123!');
-  await page.getByRole('button', { name: /Create account/i }).click();
+  await signInWithOtp(page, 'saved@flyscanner.test');
   await expect(page).toHaveURL(/\/account$/);
 
   await page.route('**/api/v1/searches', async (route) => {
@@ -409,10 +391,7 @@ test('saved flight persists from results page into the account dashboard', async
 
 test('traveler profile details are saved through the authenticated backend API', async ({ page }) => {
   await mockAccountApi(page);
-  await page.goto('/login');
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
-  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await signInWithOtp(page);
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Profile' }).click();
 
@@ -530,10 +509,7 @@ test('login, profile and logout requests use the configured Codespaces backend U
   const requestUrls = await mockAccountApi(page);
   const backendOrigin = 'https://probable-couscous-q4vv44qgjw424pqw-8080.app.github.dev';
 
-  await page.goto('/login');
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
-  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await signInWithOtp(page);
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('button', { name: /Sign out/i })).toBeVisible();
 
@@ -543,7 +519,8 @@ test('login, profile and logout requests use the configured Codespaces backend U
   const requestedUrls = requestUrls.map((url) => new URL(url));
   expect(requestedUrls.length).toBeGreaterThanOrEqual(3);
   expect(requestedUrls.every((url) => url.origin === backendOrigin)).toBe(true);
-  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/login')).toBe(true);
+  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/otp/request')).toBe(true);
+  expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/otp/verify')).toBe(true);
   expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/me')).toBe(true);
   expect(requestedUrls.some((url) => url.pathname === '/api/v1/auth/logout')).toBe(true);
 });
@@ -558,17 +535,14 @@ test('logout revokes the bearer session and clears the browser session on every 
     }
   });
 
-  await page.goto('/login');
-  await page.getByLabel('Email address').fill('tester@flyscanner.test');
-  await page.locator('input[autocomplete="current-password"]').fill('TestPass123!');
-  await page.getByRole('button', { name: /^Sign in/ }).click();
+  await signInWithOtp(page);
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole('button', { name: /Sign out/i })).toBeVisible();
 
   await page.getByRole('button', { name: /Sign out/i }).click();
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
-  await expect.poll(() => logoutAuthorization).toBe('Bearer mock-test-access-token');
+  await expect.poll(() => logoutAuthorization).toBe('Bearer mock-test-otp-access-token');
   const sessionToken = await page.evaluate(() => sessionStorage.getItem('flyscanner.auth.access-token'));
   expect(sessionToken).toBeNull();
 });
