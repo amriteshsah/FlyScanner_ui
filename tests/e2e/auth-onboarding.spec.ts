@@ -103,7 +103,7 @@ test('first-time OTP user is sent to optional profile completion and can skip it
 
   await expect(page).toHaveURL(/\/account(?:\?.*)?$/);
   await expect(page.getByRole('dialog', { name: /Complete your profile/i })).toBeVisible();
-  await expect(page.getByText(/You can add these details later/i)).toBeVisible();
+  await expect(page.getByText(/You can add or change these later/i)).toBeVisible();
 
   await page.getByRole('button', { name: /Skip for now/i }).click();
   await expect(page.getByRole('dialog', { name: /Complete your profile/i })).toHaveCount(0);
