@@ -995,3 +995,22 @@ input,select{accent-color:#2865e9}
     line-height: 1.2;
   }
 }
+
+
+/* Passenger selector: separate adult and lap-infant counts. */
+.traveller-popover { width: 286px; padding: 16px; }
+.traveller-popover > .passenger-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; margin-bottom: 13px;
+}
+.traveller-popover .passenger-row > div:first-child { min-width: 0; }
+.traveller-popover .passenger-row b { color: #293954; font-size: 12px; }
+.traveller-popover .passenger-row small { font-size: 9px; line-height: 1.35; }
+.traveller-popover .counter { flex: none; gap: 10px; }
+.traveller-popover .counter button { width: 34px; height: 34px; font-size: 17px; }
+.traveller-popover .counter button:disabled { cursor: not-allowed; opacity: .4; }
+.traveller-popover > label { display: block; margin-top: 8px; }
+@media (max-width: 700px) {
+  .traveller-popover { width: auto; }
+  .traveller-popover .counter button { width: 42px; height: 42px; }
+}

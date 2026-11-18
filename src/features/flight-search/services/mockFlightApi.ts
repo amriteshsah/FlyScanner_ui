@@ -53,6 +53,7 @@ export type FlightSearchParams = {
   departureDate: string;
   returnDate?: string;
   adults: number;
+  infants?: number;
   cabinClass: 'ECONOMY' | 'PREMIUM_ECONOMY' | 'BUSINESS' | 'FIRST';
 };
 
@@ -147,8 +148,10 @@ function toFlightResult(offer: RawOffer, airline: Airline | undefined, params: F
   const inboundFare = roundTrip
     ? Math.round((offer.returnFare * multiplier * dateFareFactor(params.returnDate!)) / 10) * 10
     : 0;
-  const outboundTotal = outboundFare * params.adults;
-  const returnTotal = inboundFare * params.adults;
+  // Synthetic local fares apply the same sample per-person rate to infants.
+  const passengerCount = params.adults + (params.infants ?? 0);
+  const outboundTotal = outboundFare * passengerCount;
+  const returnTotal = inboundFare * passengerCount;
 
   return {
     id: offer.id,
@@ -207,7 +210,7 @@ export async function searchFlightOffers(params: FlightSearchParams, signal?: Ab
       && offer.destination === params.destinationCode
       && offer.daysOfWeek.includes(dayOfWeek)
       && offer.cabinClasses.includes(params.cabinClass)
-      && offer.seatsRemaining >= params.adults
+      && offer.seatsRemaining >= params.adults + (params.infants ?? 0)
     )
     .map((offer) => toFlightResult(offer, catalog.airlineMap.get(offer.airlineCode), params))
     .sort((first, second) => first.price - second.price);

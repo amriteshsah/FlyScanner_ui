@@ -148,7 +148,7 @@ export default function FlightResultsPage() {
             <div className="results-route">
               <div className="eyebrow">FLIGHT SEARCH</div>
               <h1>{origin?.city ?? criteria.originCode} <span>→</span> {destination?.city ?? criteria.destinationCode}</h1>
-              <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' – ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'} · {cabinLabel(criteria.cabinClass)}</p>
+              <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' – ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'adult' : 'adults'}{(criteria.infants ?? 0) > 0 ? ' · ' + criteria.infants + ' ' + (criteria.infants === 1 ? 'infant' : 'infants') : ''} · {cabinLabel(criteria.cabinClass)}</p>
             </div>
             <Link className="edit-search-button" to="/"><CalendarDays size={16} /> Edit search</Link>
           </section>

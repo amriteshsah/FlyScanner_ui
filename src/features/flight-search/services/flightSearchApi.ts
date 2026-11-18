@@ -212,7 +212,7 @@ export async function searchFlightResults(
         passengers: {
           adults: params.adults,
           childrenAges: [],
-          infants: 0,
+          infants: params.infants ?? 0,
         },
         cabinClass: params.cabinClass,
         currency: 'INR',

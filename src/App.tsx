@@ -45,6 +45,7 @@ function App() {
   const [departureDate, setDepartureDate] = useState(dateAfter(14));
   const [returnDate, setReturnDate] = useState(dateAfter(20));
   const [travellers, setTravellers] = useState(1);
+  const [infants, setInfants] = useState(0);
   const [cabin, setCabin] = useState<CabinClass>('ECONOMY');
   const [travellerMenuOpen, setTravellerMenuOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
@@ -137,6 +138,7 @@ function App() {
       departureDate,
       returnDate: trip === 'Round trip' ? returnDate : undefined,
       adults: travellers,
+      infants,
       cabinClass: cabin,
     });
     navigate('/flights/search?' + query);
@@ -233,17 +235,25 @@ function App() {
             <div className="traveller-wrap">
               <button type="button" className="field traveller-field" onClick={() => setTravellerMenuOpen((value) => !value)} aria-expanded={travellerMenuOpen}>
                 <span>TRAVELLERS & CLASS</span>
-                <div><Users size={17} /><strong>{travellers} {travellers === 1 ? 'traveller' : 'travellers'}</strong><ChevronDown size={15} /></div>
+                <div><Users size={17} /><strong>{travellers} {travellers === 1 ? 'adult' : 'adults'}{infants > 0 ? ' · ' + infants + ' ' + (infants === 1 ? 'infant' : 'infants') : ''}</strong><ChevronDown size={15} /></div>
                 <small>{CABIN_OPTIONS.find((option) => option.value === cabin)?.label}</small>
               </button>
               {travellerMenuOpen && (
                 <div className="traveller-popover">
-                  <div>
+                  <div className="passenger-row">
                     <div><b>Adults</b><small>Age 12+</small></div>
                     <div className="counter">
-                      <button type="button" aria-label="Remove one adult" onClick={() => setTravellers(Math.max(1, travellers - 1))}>−</button>
+                      <button type="button" aria-label="Remove one adult" disabled={travellers <= Math.max(1, infants)} onClick={() => setTravellers(Math.max(1, infants, travellers - 1))}>−</button>
                       <b>{travellers}</b>
-                      <button type="button" aria-label="Add one adult" onClick={() => setTravellers(Math.min(9, travellers + 1))}>+</button>
+                      <button type="button" aria-label="Add one adult" disabled={travellers + infants >= 9} onClick={() => setTravellers(Math.min(9 - infants, travellers + 1))}>+</button>
+                    </div>
+                  </div>
+                  <div className="passenger-row">
+                    <div><b>Infants</b><small>Under 2 years · one per adult</small></div>
+                    <div className="counter">
+                      <button type="button" aria-label="Remove one infant" disabled={infants === 0} onClick={() => setInfants(Math.max(0, infants - 1))}>−</button>
+                      <b>{infants}</b>
+                      <button type="button" aria-label="Add one infant" disabled={infants >= travellers || travellers + infants >= 9} onClick={() => setInfants(Math.min(travellers, 9 - travellers, infants + 1))}>+</button>
                     </div>
                   </div>
                   <label>Cabin class
@@ -333,6 +343,7 @@ function App() {
                         departureDate,
                         returnDate: trip === 'Round trip' ? returnDate : undefined,
                         adults: travellers,
+                         infants,
                         cabinClass: cabin,
                       })}>View details <ArrowUpRight size={15} /></Link>
                     </div>
