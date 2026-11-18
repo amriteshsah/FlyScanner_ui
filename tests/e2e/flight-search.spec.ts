@@ -211,6 +211,30 @@ test('airport suggestions support a complete route search and detail navigation'
   await expect(page.getByText('PRICE SUMMARY')).toBeVisible();
 });
 
+
+test('traveller selector adds infants and carries the count into flight search', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('.traveller-field').click();
+
+  const addInfant = page.getByRole('button', { name: 'Add one infant' });
+  await expect(addInfant).toBeEnabled();
+  await addInfant.click();
+
+  await expect(page.locator('.traveller-field')).toContainText('1 adult · 1 infant');
+  await expect(addInfant).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Remove one adult' })).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('combobox', { name: 'FROM' }).fill('Beng');
+  await page.getByRole('option', { name: /Bengaluru, India/i }).click();
+  await page.getByRole('combobox', { name: 'TO' }).fill('Dub');
+  await page.getByRole('option', { name: /Dubai, United Arab Emirates/i }).click();
+  await page.getByRole('button', { name: /Search flights/i }).click();
+
+  await expect(page).toHaveURL(/infants=1/);
+  await expect(page.locator('.results-route p')).toContainText('1 adult · 1 infant');
+});
+
 test('mobile homepage puts the flight search first and keeps its action above the fold', async ({ page }) => {
   await page.setViewportSize({ width: 553, height: 574 });
   await page.goto('/');
@@ -510,7 +534,7 @@ test('backend flight search renders API offers, partial provider status and deta
     });
   });
 
-  await page.goto('/flights/search?from=BLR&to=DXB&departure=2027-01-15&adults=2&cabin=ECONOMY&trip=ONE_WAY&source=backend');
+  await page.goto('/flights/search?from=BLR&to=DXB&departure=2027-01-15&adults=2&infants=1&cabin=ECONOMY&trip=ONE_WAY&source=backend');
   await expect(page.getByTestId('flight-result-card')).toHaveCount(1);
   await expect(page.getByTestId('provider-search-notice')).toContainText('Some flight sources did not respond');
   await expect(page.getByText('₹12,650')).toBeVisible();
@@ -519,7 +543,7 @@ test('backend flight search renders API offers, partial provider status and deta
   expect(capturedRequests[0]).toMatchObject({
     tripType: 'ONE_WAY',
     legs: [{ origin: 'BLR', destination: 'DXB', departureDate: '2027-01-15' }],
-    passengers: { adults: 2, childrenAges: [], infants: 0 },
+    passengers: { adults: 2, childrenAges: [], infants: 1 },
     cabinClass: 'ECONOMY',
     currency: 'INR',
     market: 'IN',
