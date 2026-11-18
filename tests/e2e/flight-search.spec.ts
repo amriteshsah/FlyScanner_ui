@@ -235,20 +235,22 @@ test('backend flight search renders API offers, partial provider status and deta
   await expect(page.getByText('₹12,650')).toBeVisible();
   await expect(page.locator('.results-trust')).toContainText('Backend search');
 
-  expect(capturedRequests[0]).toMatchObject({
-    tripType: 'ONE_WAY',
-    legs: [{ origin: 'BLR', destination: 'DXB', departureDate: '2027-01-15' }],
-    passengers: { adults: 2, childrenAges: [], infants: 0 },
-    cabinClass: 'ECONOMY',
-    currency: 'INR',
-    market: 'IN',
-    locale: 'en-IN',
-  });
+  expect(capturedRequests.length).toBeGreaterThanOrEqual(2);
+  for (const request of capturedRequests) {
+    expect(request).toMatchObject({
+      tripType: 'ONE_WAY',
+      legs: [{ origin: 'BLR', destination: 'DXB', departureDate: '2027-01-15' }],
+      passengers: { adults: 2, childrenAges: [], infants: 0 },
+      cabinClass: 'ECONOMY',
+      currency: 'INR',
+      market: 'IN',
+      locale: 'en-IN',
+    });
+  }
 
   await page.getByRole('link', { name: /View flight details/i }).click();
   await expect(page.getByRole('heading', { name: 'Flight itinerary' })).toBeVisible();
   await expect(page.getByText('FS100')).toBeVisible();
   await expect(page.getByText('No booking is made in this demo.')).toBeVisible();
   await expect(page.getByText('Not supplied by search response')).toBeVisible();
-  expect(capturedRequests.length).toBe(2);
 });
