@@ -240,6 +240,7 @@ test('mobile homepage puts the flight search first and keeps its action above th
 
   expect(positions.panelTop).toBeLessThan(110);
   expect(positions.buttonBottom).toBeLessThan(positions.viewportHeight);
+  expect(searchButton).toHaveCSS('min-height', '54px');
   expect(positions.introTop).toBeGreaterThan(positions.panelTop);
   expect(positions.artTop).toBeGreaterThan(positions.introTop);
 });
