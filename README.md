@@ -92,12 +92,14 @@ The iPhone profile runs WebKit with an iPhone viewport. It provides compatibilit
 
 ## Account authentication and travel dashboard
 
+Standard traveler accounts sign in with email + one-time password (OTP) only. Enter an email address, request the six-digit code and verify it to sign in. A previously unregistered email becomes a new account only after successful OTP verification; there is no separate standard-user registration form.
+
 Routes:
-- \`/login\` — backend sign-in via \`POST /api/v1/auth/login\`
-- \`/register\` — backend registration via \`POST /api/v1/auth/register\`
-- \`/forgot-password\` — password recovery confirmation UI
-- \`/account\` — travel dashboard with Overview, Saved flights, My trips, Price alerts and Profile
+- `/login` — email OTP request/resend/verification via `/api/v1/auth/otp/request`, `/api/v1/auth/otp/resend` and `/api/v1/auth/otp/verify`
+- `/account` — travel dashboard with Overview, Saved flights, My trips, Price alerts and Profile
 
-The shared header links to Explore from the homepage and all other pages. Login stores the opaque bearer token in tab-scoped \`sessionStorage\`, then retrieves the profile from \`GET /api/v1/auth/me\`. Profile updates use \`PATCH /api/v1/auth/me\`, and logout calls \`POST /api/v1/auth/logout\`. Saved flights and price-alert UI data remain browser-local demo features.
+Login stores the opaque bearer token in tab-scoped `sessionStorage`, then retrieves the current profile from `GET /api/v1/auth/me`. New accounts with `profileCompleted: false` are shown a first-time profile dialog. Full name, mobile number and date of birth are optional; users can choose **Save & Continue** or **Skip for now**. Both actions persist through `PATCH /api/v1/auth/me`, and profile details remain editable later from the account dashboard.
 
-**Security and integration boundary:** Authentication is connected to the Spring Boot API for registration, login, profile retrieval/update and logout. Saved flights and price-alert UI data are still browser-local; password reset, email verification and real notification delivery are not implemented.
+Logout calls `POST /api/v1/auth/logout`. Saved flights and price alerts use authenticated backend APIs.
+
+**Security boundary:** Password login, password registration and forgot-password pages are not available in the standard-user UI. The backend retains an Admin-only password verification method for a future Admin portal, where an additional email OTP factor must be implemented before issuing a session. Configure SMTP and a unique production OTP HMAC secret on the backend before enabling live email delivery.

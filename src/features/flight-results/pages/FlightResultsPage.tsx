@@ -5,7 +5,7 @@ import SiteHeader from '../../../components/layout/SiteHeader';
 import { type Airport, type FlightResult, getAirportCatalog } from '../../flight-search/services/mockFlightApi';
 import { getFlightSearchSource, searchFlightResults } from '../../flight-search/services/flightSearchApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
-import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
+import { getSavedFlightsFromApi, removeSavedFlightFromApi, saveFlightToApi, type SavedFlightRecord } from '../../account/services/authApi';
 
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
@@ -27,8 +27,19 @@ export default function FlightResultsPage() {
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [maxFare, setMaxFare] = useState(60000);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [saved, setSaved] = useState<number[]>(() => getSavedFlights().map((flight) => flight.id));
+  const [savedFlights, setSavedFlights] = useState<SavedFlightRecord[]>([]);
+  const [savingOfferToken, setSavingOfferToken] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    getSavedFlightsFromApi().then((items) => {
+      if (active) setSavedFlights(items);
+    }).catch(() => {
+      if (active) setSavedFlights([]);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -95,12 +106,31 @@ export default function FlightResultsPage() {
     setSelectedAirlines((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
   }
 
-  function toggleSaved(id: number) {
+  async function toggleSaved(id: number) {
     const flight = flights.find((item) => item.id === id);
     if (!flight) return;
-    const updated = toggleSavedFlight(flight);
-    setSaved(updated.map((item) => item.id));
-    setNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
+    if (!flight.offerToken) {
+      setNotice('This sample flight is not backed by a backend offer and cannot be saved. Run a backend flight search to save it.');
+      return;
+    }
+
+    setSavingOfferToken(flight.offerToken);
+    try {
+      const existing = savedFlights.find((item) => item.offerToken === flight.offerToken);
+      if (existing) {
+        await removeSavedFlightFromApi(existing.id);
+        setSavedFlights((current) => current.filter((item) => item.id !== existing.id));
+        setNotice('Flight removed from your saved flights.');
+      } else {
+        const savedFlight = await saveFlightToApi(flight.offerToken);
+        setSavedFlights((current) => [savedFlight, ...current.filter((item) => item.offerToken !== flight.offerToken)]);
+        setNotice('Flight saved to your FlyScanner account.');
+      }
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Unable to save this flight. Please sign in and retry.');
+    } finally {
+      setSavingOfferToken(null);
+    }
   }
 
   const sourceParam = searchParams.get('source');
@@ -118,7 +148,7 @@ export default function FlightResultsPage() {
             <div className="results-route">
               <div className="eyebrow">FLIGHT SEARCH</div>
               <h1>{origin?.city ?? criteria.originCode} <span>→</span> {destination?.city ?? criteria.destinationCode}</h1>
-              <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' – ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'} · {cabinLabel(criteria.cabinClass)}</p>
+              <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' – ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'adult' : 'adults'}{(criteria.infants ?? 0) > 0 ? ' · ' + criteria.infants + ' ' + (criteria.infants === 1 ? 'infant' : 'infants') : ''} · {cabinLabel(criteria.cabinClass)}</p>
             </div>
             <Link className="edit-search-button" to="/"><CalendarDays size={16} /> Edit search</Link>
           </section>
@@ -202,7 +232,7 @@ export default function FlightResultsPage() {
                       <span className="result-baggage">{flight.seatsRemaining > 0 ? flight.baggage + ' checked baggage · ' + flight.seatsRemaining + ' sample seats' : flight.baggage}</span>
                     </div>
                     <div className="result-actions">
-                      <button className={saved.includes(flight.id) ? 'result-save saved' : 'result-save'} type="button" onClick={() => toggleSaved(flight.id)} aria-label={saved.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={saved.includes(flight.id)}><Heart size={17} fill={saved.includes(flight.id) ? 'currentColor' : 'none'} /></button>
+                      <button className={savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'result-save saved' : 'result-save'} type="button" onClick={() => void toggleSaved(flight.id)} disabled={Boolean(flight.offerToken && savingOfferToken === flight.offerToken)} aria-label={savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'Remove saved flight' : 'Save flight'} aria-pressed={savedFlights.some((item) => item.offerToken === flight.offerToken)} title={flight.offerToken ? 'Save this flight to your account' : 'Only backend flight offers can be saved'}><Heart size={17} fill={savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'currentColor' : 'none'} /></button>
                       <Link className="details-button" to={'/flights/' + flight.id + '?' + query}>View flight details <ArrowUpRight size={16} /></Link>
                     </div>
                   </div>

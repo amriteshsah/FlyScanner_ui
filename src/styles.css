@@ -720,3 +720,297 @@ input,select{accent-color:#2865e9}
  .alert-form{grid-template-columns:1fr}
  .alert-form label:nth-child(3),.alert-form .account-primary-button{grid-column:1}
 }
+
+
+/* Traveler profile fields */
+.profile-form{max-width:640px}
+.profile-fields-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.profile-fields-grid label{min-width:0}
+.profile-fields-grid input{min-width:0}
+@media(max-width:520px){.profile-fields-grid{grid-template-columns:1fr}}
+
+
+.auth-method-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f3f6fa;border:1px solid #e8edf4;border-radius:9px;margin-top:20px}
+.auth-method-switch button{min-height:38px;border:0;border-radius:6px;background:transparent;color:#718096;font-size:10px;font-weight:800}
+.auth-method-switch button.active{background:#fff;color:#245fd4;box-shadow:0 2px 8px #1d355312}
+.otp-timing{display:grid;gap:5px;padding:10px 12px;border:1px solid #e5ecf5;background:#f8fafe;border-radius:8px;color:#6c7d94;font-size:10px}
+.otp-timing span{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.otp-timing strong{font:800 11px Manrope,sans-serif;color:#2d4e7b;font-variant-numeric:tabular-nums}
+.auth-notice{margin:0;color:#23694e;background:#effaf4;border:1px solid #d9f1e4;border-radius:7px;padding:9px 10px;font-size:10px;line-height:1.5}
+.otp-resend-button,.otp-change-email{min-height:37px;border:1px solid #e2e9f2;border-radius:8px;background:#fff;color:#3564a2;font-size:10px;font-weight:800}
+.otp-resend-button:disabled{color:#9aa7b8;background:#f8f9fb;cursor:not-allowed}
+.otp-change-email{border:0;background:transparent;color:#8190a4;text-decoration:underline;min-height:28px}
+@media(max-width:680px){.auth-method-switch{margin-top:16px}.otp-timing{font-size:9px}}
+
+.auth-method-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f3f6fa;border:1px solid #e8edf4;border-radius:9px;margin-top:20px}
+.auth-method-switch button{min-height:38px;border:0;border-radius:6px;background:transparent;color:#718096;font-size:10px;font-weight:800}
+.auth-method-switch button.active{background:#fff;color:#245fd4;box-shadow:0 2px 8px #1d355312}
+.otp-timing{display:grid;gap:5px;padding:10px 12px;border:1px solid #e5ecf5;background:#f8fafe;border-radius:8px;color:#6c7d94;font-size:10px}
+.otp-timing span{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.otp-timing strong{font:800 11px Manrope,sans-serif;color:#2d4e7b;font-variant-numeric:tabular-nums}
+.auth-notice{margin:0;color:#23694e;background:#effaf4;border:1px solid #d9f1e4;border-radius:7px;padding:9px 10px;font-size:10px;line-height:1.5}
+.otp-resend-button,.otp-change-email{min-height:37px;border:1px solid #e2e9f2;border-radius:8px;background:#fff;color:#3564a2;font-size:10px;font-weight:800}
+.otp-resend-button:disabled{color:#9aa7b8;background:#f8f9fb;cursor:not-allowed}
+.otp-change-email{border:0;background:transparent;color:#8190a4;text-decoration:underline;min-height:28px}
+@media(max-width:680px){.auth-method-switch{margin-top:16px}.otp-timing{font-size:9px}}
+
+
+/* First-time traveler profile onboarding */
+.profile-onboarding-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(13,25,45,.58);display:grid;place-items:center;padding:22px;backdrop-filter:blur(5px)}
+.profile-onboarding-card{width:min(100%,560px);max-height:min(90vh,820px);overflow:auto;background:#fff;border:1px solid #e6eaf1;border-radius:20px;padding:30px;box-shadow:0 24px 80px rgba(15,30,55,.24)}
+.profile-onboarding-card h2{font:800 28px/1.15 Manrope,sans-serif;color:#17243d;letter-spacing:-.8px;margin:12px 0 8px}
+.profile-onboarding-card>p{font-size:13px;line-height:1.65;color:#758095;margin:0 0 22px}
+.profile-onboarding-form{display:grid;gap:14px}
+.profile-onboarding-form label{display:grid;gap:7px;color:#39475f;font-size:12px;font-weight:700}
+.profile-onboarding-form input{width:100%;height:43px;border:1px solid #dfe5ee;border-radius:9px;padding:0 12px;color:#1d2b45;background:#fff;outline:none}
+.profile-onboarding-form input:focus{border-color:#5683ed;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.profile-onboarding-actions{display:flex;align-items:center;gap:18px;margin-top:6px}
+.profile-onboarding-actions .account-primary-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:0 18px}
+.profile-onboarding-skip{border:0;background:transparent;color:#53627a;font-size:13px;font-weight:700;padding:10px 4px}
+.profile-onboarding-skip:hover{color:#2563eb}
+.profile-onboarding-card>small{display:block;margin-top:15px;color:#8a95a7;font-size:11px}
+@media(max-width:560px){.profile-onboarding-card{padding:22px 18px;border-radius:16px}.profile-onboarding-card h2{font-size:24px}.profile-onboarding-actions{align-items:stretch;flex-direction:column;gap:4px}.profile-onboarding-skip{align-self:center}}
+
+
+/* Homepage: bring the primary flight-search action into the first viewport. */
+@media (min-width: 761px) {
+  .hero {
+    min-height: 0;
+    padding: 30px 0 20px;
+    gap: 34px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 4vw, 54px);
+    margin: 12px 0 10px;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .trust-row {
+    margin-top: 15px;
+  }
+  .hero-art {
+    height: 218px;
+  }
+  .search-panel {
+    margin-bottom: 48px;
+    padding-top: 19px;
+  }
+  .field {
+    height: 76px;
+  }
+  .search-button {
+    height: 76px;
+    min-height: 76px;
+  }
+  .search-intro {
+    display: none;
+  }
+}
+
+/* Small screens: the search is the first task, not the last item after the hero. */
+@media (max-width: 760px) {
+  .app-shell > main {
+    display: flex;
+    flex-direction: column;
+  }
+  .app-shell > main > .hero {
+    display: contents;
+  }
+  .app-shell > main > .search-panel {
+    order: 0;
+    margin: 8px 0 20px;
+    padding: 17px 13px 13px;
+  }
+  .app-shell > main > .hero > .hero-copy {
+    order: 1;
+    padding: 12px 0 0;
+    margin: 0;
+  }
+  .app-shell > main > .hero > .hero-art {
+    order: 2;
+    height: 145px;
+    margin: 14px 0 28px;
+  }
+  .app-shell > main > .results-section {
+    order: 3;
+  }
+  .search-intro {
+    display: block;
+    margin-bottom: 12px;
+  }
+  .search-intro h2 {
+    margin: 5px 0 0;
+    color: #17243d;
+    font: 800 20px/1.2 Manrope, sans-serif;
+    letter-spacing: -.55px;
+  }
+  .search-top {
+    margin-bottom: 12px;
+  }
+  .search-panel .panel-foot {
+    margin-top: 10px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    line-height: 1.05;
+    margin: 9px 0 8px;
+  }
+  .hero-copy > p {
+    max-width: 520px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .trust-row {
+    margin-top: 11px;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell > main > .search-panel {
+    margin-top: 5px;
+  }
+  .search-intro h2 {
+    font-size: 19px;
+  }
+  .search-panel .search-note {
+    line-height: 1.35;
+  }
+}
+
+@media (max-height: 650px) and (min-width: 761px) {
+  .hero {
+    padding-top: 18px;
+    padding-bottom: 12px;
+  }
+  .hero-art {
+    height: 180px;
+  }
+  .search-panel {
+    margin-bottom: 34px;
+  }
+}
+
+
+/* Compact search composition for short mobile and embedded browser viewports. */
+@media (max-width: 760px) and (max-height: 650px) {
+  .app-shell > main > .search-panel {
+    margin: 4px 0 14px;
+    padding: 10px 12px 8px;
+  }
+  .search-intro {
+    margin-bottom: 7px;
+  }
+  .search-intro .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.2px;
+  }
+  .search-intro h2 {
+    margin-top: 2px;
+    font-size: 17px;
+    line-height: 1.15;
+  }
+  .search-top {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .search-note {
+    display: none;
+  }
+  .trip-tabs {
+    gap: 3px;
+    padding: 2px;
+  }
+  .trip-tabs button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+  .search-grid {
+    gap: 6px;
+  }
+  .airport-autocomplete {
+    min-height: 66px;
+    padding: 7px 9px;
+  }
+  .airport-autocomplete > label {
+    font-size: 8px;
+    line-height: 1.1;
+  }
+  .airport-input-row {
+    gap: 6px;
+    margin-top: 3px;
+  }
+  .airport-autocomplete .airport-input-row input {
+    min-height: 25px;
+    line-height: 1.2;
+    font-size: 16px;
+  }
+  .airport-autocomplete > small {
+    display: none;
+  }
+  .swap-button {
+    top: 50px;
+    width: 34px;
+    height: 34px;
+  }
+  .date-field {
+    height: 60px;
+    min-height: 60px;
+    padding: 7px 8px;
+  }
+  .date-field > div {
+    gap: 5px;
+    margin-top: 3px;
+  }
+  .date-field input[type="date"] {
+    min-height: 26px;
+    font-size: 15px;
+  }
+  .date-field small {
+    display: none;
+  }
+  .traveller-field {
+    height: 60px;
+    min-height: 60px;
+    padding: 7px 9px;
+  }
+  .traveller-field > div {
+    margin-top: 3px;
+  }
+  .traveller-field small {
+    display: none;
+  }
+  .search-button {
+    height: 54px;
+    min-height: 54px;
+    font-size: 15px;
+  }
+  .search-panel .panel-foot {
+    margin-top: 7px;
+    font-size: 8px;
+    line-height: 1.2;
+  }
+}
+
+
+/* Passenger selector: separate adult and lap-infant counts. */
+.traveller-popover { width: 286px; padding: 16px; }
+.traveller-popover > .passenger-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; margin-bottom: 13px;
+}
+.traveller-popover .passenger-row > div:first-child { min-width: 0; }
+.traveller-popover .passenger-row b { color: #293954; font-size: 12px; }
+.traveller-popover .passenger-row small { font-size: 9px; line-height: 1.35; }
+.traveller-popover .counter { flex: none; gap: 10px; }
+.traveller-popover .counter button { width: 34px; height: 34px; font-size: 17px; }
+.traveller-popover .counter button:disabled { cursor: not-allowed; opacity: .4; }
+.traveller-popover > label { display: block; margin-top: 8px; }
+@media (max-width: 700px) {
+  .traveller-popover { width: auto; }
+  .traveller-popover .counter button { width: 42px; height: 42px; }
+}

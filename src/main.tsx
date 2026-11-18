@@ -6,9 +6,7 @@ import FlightResultsPage from './features/flight-results/pages/FlightResultsPage
 import FlightDetailsPage from './features/flight-details/pages/FlightDetailsPage';
 import ExplorePage from './features/explore/pages/ExplorePage';
 import LoginPage from './features/account/pages/LoginPage';
-import RegisterPage from './features/account/pages/RegisterPage';
 import AccountDashboardPage from './features/account/pages/AccountDashboardPage';
-import ForgotPasswordPage from './features/account/pages/ForgotPasswordPage';
 import './styles.css';
 
 function NotFoundPage() {
@@ -30,8 +28,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/flights/:offerId" element={<FlightDetailsPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/account" element={<AccountDashboardPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

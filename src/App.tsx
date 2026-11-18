@@ -15,7 +15,6 @@ import {
 import AirportAutocomplete from './features/flight-search/components/AirportAutocomplete';
 import { createFlightSearchQuery } from './features/flight-search/utils/searchQuery';
 import SiteHeader from './components/layout/SiteHeader';
-import { getSavedFlights, toggleSavedFlight } from './features/account/services/mockAccountStore';
 
 type TripType = 'Round trip' | 'One way';
 type SortMode = 'Recommended' | 'Cheapest' | 'Fastest';
@@ -46,6 +45,7 @@ function App() {
   const [departureDate, setDepartureDate] = useState(dateAfter(14));
   const [returnDate, setReturnDate] = useState(dateAfter(20));
   const [travellers, setTravellers] = useState(1);
+  const [infants, setInfants] = useState(0);
   const [cabin, setCabin] = useState<CabinClass>('ECONOMY');
   const [travellerMenuOpen, setTravellerMenuOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
@@ -57,7 +57,6 @@ function App() {
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [maxFare, setMaxFare] = useState(50000);
-  const [savedFlights, setSavedFlights] = useState<number[]>(() => getSavedFlights().map((flight) => flight.id));
 
   useEffect(() => {
     let active = true;
@@ -139,6 +138,7 @@ function App() {
       departureDate,
       returnDate: trip === 'Round trip' ? returnDate : undefined,
       adults: travellers,
+      infants,
       cabinClass: cabin,
     });
     navigate('/flights/search?' + query);
@@ -156,12 +156,8 @@ function App() {
       : [...current, period]);
   }
 
-  function toggleSaved(id: number) {
-    const flight = searchResults.find((item) => item.id === id);
-    if (!flight) return;
-    const updated = toggleSavedFlight(flight);
-    setSavedFlights(updated.map((item) => item.id));
-    showNotice(updated.some((item) => item.id === id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
+  function toggleSaved() {
+    showNotice('These featured options are sample demo data. Run a specific flight search to save a backend offer to your account.');
   }
 
   function showNotice(message: string) {
@@ -193,6 +189,10 @@ function App() {
         </section>
 
         <section className="search-panel" aria-label="Flight search">
+          <div className="search-intro">
+            <span className="eyebrow dark-eyebrow">PLAN YOUR NEXT TRIP</span>
+            <h2>Where would you like to go?</h2>
+          </div>
           <div className="search-top">
             <div className="trip-tabs" role="group" aria-label="Trip type">
               {(['Round trip', 'One way'] as TripType[]).map((item) => (
@@ -235,17 +235,25 @@ function App() {
             <div className="traveller-wrap">
               <button type="button" className="field traveller-field" onClick={() => setTravellerMenuOpen((value) => !value)} aria-expanded={travellerMenuOpen}>
                 <span>TRAVELLERS & CLASS</span>
-                <div><Users size={17} /><strong>{travellers} {travellers === 1 ? 'traveller' : 'travellers'}</strong><ChevronDown size={15} /></div>
+                <div><Users size={17} /><strong>{travellers} {travellers === 1 ? 'adult' : 'adults'}{infants > 0 ? ' · ' + infants + ' ' + (infants === 1 ? 'infant' : 'infants') : ''}</strong><ChevronDown size={15} /></div>
                 <small>{CABIN_OPTIONS.find((option) => option.value === cabin)?.label}</small>
               </button>
               {travellerMenuOpen && (
                 <div className="traveller-popover">
-                  <div>
+                  <div className="passenger-row">
                     <div><b>Adults</b><small>Age 12+</small></div>
                     <div className="counter">
-                      <button type="button" aria-label="Remove one adult" onClick={() => setTravellers(Math.max(1, travellers - 1))}>−</button>
+                      <button type="button" aria-label="Remove one adult" disabled={travellers <= Math.max(1, infants)} onClick={() => setTravellers(Math.max(1, infants, travellers - 1))}>−</button>
                       <b>{travellers}</b>
-                      <button type="button" aria-label="Add one adult" onClick={() => setTravellers(Math.min(9, travellers + 1))}>+</button>
+                      <button type="button" aria-label="Add one adult" disabled={travellers + infants >= 9} onClick={() => setTravellers(Math.min(9 - infants, travellers + 1))}>+</button>
+                    </div>
+                  </div>
+                  <div className="passenger-row">
+                    <div><b>Infants</b><small>Under 2 years · one per adult</small></div>
+                    <div className="counter">
+                      <button type="button" aria-label="Remove one infant" disabled={infants === 0} onClick={() => setInfants(Math.max(0, infants - 1))}>−</button>
+                      <b>{infants}</b>
+                      <button type="button" aria-label="Add one infant" disabled={infants >= travellers || travellers + infants >= 9} onClick={() => setInfants(Math.min(travellers, 9 - travellers, infants + 1))}>+</button>
                     </div>
                   </div>
                   <label>Cabin class
@@ -335,6 +343,7 @@ function App() {
                         departureDate,
                         returnDate: trip === 'Round trip' ? returnDate : undefined,
                         adults: travellers,
+                         infants,
                         cabinClass: cabin,
                       })}>View details <ArrowUpRight size={15} /></Link>
                     </div>
@@ -345,7 +354,7 @@ function App() {
                       {flight.carbonIndex === 'low' && <span className="carbon-tag"><Check size={12} /> Lower emissions · demo estimate</span>}
                     </div>
                   )}
-                  <button className={savedFlights.includes(flight.id) ? 'save-flight saved' : 'save-flight'} onClick={() => toggleSaved(flight.id)} aria-label={savedFlights.includes(flight.id) ? 'Remove saved flight' : 'Save flight'} aria-pressed={savedFlights.includes(flight.id)}><Heart size={17} fill={savedFlights.includes(flight.id) ? 'currentColor' : 'none'} /></button>
+                  <button className="save-flight" type="button" onClick={toggleSaved} aria-label="About saving featured sample flights" title="Search a specific route to save a real backend offer"><Heart size={17} /></button>
                 </article>
               ))}
               {results.length === 0 && (

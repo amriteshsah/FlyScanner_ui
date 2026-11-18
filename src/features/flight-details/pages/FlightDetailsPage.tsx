@@ -5,7 +5,7 @@ import SiteHeader from '../../../components/layout/SiteHeader';
 import { type Airport, type FlightResult, getAirportCatalog } from '../../flight-search/services/mockFlightApi';
 import { getFlightSearchSource, searchFlightResults } from '../../flight-search/services/flightSearchApi';
 import { cabinLabel, createFlightSearchQuery, formatTravelDate, parseFlightSearchParams } from '../../flight-search/utils/searchQuery';
-import { getSavedFlights, toggleSavedFlight } from '../../account/services/mockAccountStore';
+import { getSavedFlightsFromApi, removeSavedFlightFromApi, saveFlightToApi, type SavedFlightRecord } from '../../account/services/authApi';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
 
@@ -19,7 +19,18 @@ export default function FlightDetailsPage() {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
-  const [savedIds, setSavedIds] = useState<number[]>(() => getSavedFlights().map((item) => item.id));
+  const [savedFlights, setSavedFlights] = useState<SavedFlightRecord[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getSavedFlightsFromApi().then((items) => {
+      if (active) setSavedFlights(items);
+    }).catch(() => {
+      if (active) setSavedFlights([]);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -54,11 +65,29 @@ export default function FlightDetailsPage() {
     ? createFlightSearchQuery(criteria) + (sourceParam ? '&source=' + encodeURIComponent(sourceParam) : '')
     : '';
 
-  function toggleSaved() {
+  async function toggleSaved() {
     if (!flight) return;
-    const updated = toggleSavedFlight(flight);
-    setSavedIds(updated.map((item) => item.id));
-    setNotice(updated.some((item) => item.id === flight.id) ? 'Flight saved to your account.' : 'Flight removed from saved flights.');
+    if (!flight.offerToken) {
+      setNotice('This sample offer cannot be saved. Run a backend flight search to save a real offer snapshot.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const existing = savedFlights.find((item) => item.offerToken === flight.offerToken);
+      if (existing) {
+        await removeSavedFlightFromApi(existing.id);
+        setSavedFlights((current) => current.filter((item) => item.id !== existing.id));
+        setNotice('Flight removed from your saved flights.');
+      } else {
+        const savedFlight = await saveFlightToApi(flight.offerToken);
+        setSavedFlights((current) => [savedFlight, ...current.filter((item) => item.offerToken !== flight.offerToken)]);
+        setNotice('Flight saved to your FlyScanner account.');
+      }
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Unable to save this flight. Please sign in and retry.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -85,9 +114,9 @@ export default function FlightDetailsPage() {
                 <p>{formatTravelDate(criteria.departureDate)}{criteria.returnDate ? ' · Return ' + formatTravelDate(criteria.returnDate) : ' · One way'} · {criteria.adults} {criteria.adults === 1 ? 'traveller' : 'travellers'} · {cabinLabel(criteria.cabinClass)}</p>
               </div>
               <div className="detail-heading-actions">
-                <button type="button" className={flight && savedIds.includes(flight.id) ? 'detail-save-button saved' : 'detail-save-button'} onClick={toggleSaved} aria-pressed={Boolean(flight && savedIds.includes(flight.id))}>
-                  <Heart size={16} fill={flight && savedIds.includes(flight.id) ? 'currentColor' : 'none'} />
-                  {flight && savedIds.includes(flight.id) ? 'Saved' : 'Save flight'}
+                <button type="button" className={flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'detail-save-button saved' : 'detail-save-button'} onClick={() => void toggleSaved()} disabled={saving} aria-pressed={Boolean(flight && savedFlights.some((item) => item.offerToken === flight.offerToken))}>
+                  <Heart size={16} fill={flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'currentColor' : 'none'} />
+                  {flight && savedFlights.some((item) => item.offerToken === flight.offerToken) ? 'Saved' : 'Save flight'}
                 </button>
                 <span className="detail-demo-tag"><ShieldCheck size={15} /> Sample offer</span>
               </div>

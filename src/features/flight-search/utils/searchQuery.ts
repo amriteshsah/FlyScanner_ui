@@ -8,6 +8,7 @@ export function parseFlightSearchParams(params: URLSearchParams): FlightSearchPa
   const departureDate = params.get('departure') ?? '';
   const returnDate = params.get('returnDate') ?? undefined;
   const adults = Number(params.get('adults') ?? '1');
+  const infants = Number(params.get('infants') ?? '0');
   const cabinClass = (params.get('cabin') ?? 'ECONOMY').toUpperCase();
 
   if (!/^[A-Z]{3}$/.test(originCode) || !/^[A-Z]{3}$/.test(destinationCode)) return null;
@@ -15,6 +16,7 @@ export function parseFlightSearchParams(params: URLSearchParams): FlightSearchPa
   if (!/^\d{4}-\d{2}-\d{2}$/.test(departureDate)) return null;
   if (returnDate && (!/^\d{4}-\d{2}-\d{2}$/.test(returnDate) || returnDate < departureDate)) return null;
   if (!Number.isInteger(adults) || adults < 1 || adults > 9) return null;
+  if (!Number.isInteger(infants) || infants < 0 || infants > adults || adults + infants > 9) return null;
   if (!CABIN_CLASSES.includes(cabinClass as typeof CABIN_CLASSES[number])) return null;
 
   return {
@@ -23,6 +25,7 @@ export function parseFlightSearchParams(params: URLSearchParams): FlightSearchPa
     departureDate,
     returnDate,
     adults,
+    infants,
     cabinClass: cabinClass as FlightSearchParams['cabinClass'],
   };
 }
@@ -37,6 +40,7 @@ export function createFlightSearchQuery(params: FlightSearchParams): string {
     trip: params.returnDate ? 'ROUND_TRIP' : 'ONE_WAY',
   });
   if (params.returnDate) query.set('returnDate', params.returnDate);
+  if ((params.infants ?? 0) > 0) query.set('infants', String(params.infants));
   return query.toString();
 }
 
