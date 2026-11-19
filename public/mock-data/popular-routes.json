@@ -1,0 +1,47 @@
+{
+  "dataset": "popular-routes",
+  "version": 1,
+  "description": "Popular route shortcuts with indicative mock fares.",
+  "items": [
+    {
+      "id": "blr-dxb",
+      "origin": "BLR",
+      "destination": "DXB",
+      "label": "Bengaluru to Dubai",
+      "fromFare": 12480,
+      "searchCountLabel": "Popular international route"
+    },
+    {
+      "id": "blr-del",
+      "origin": "BLR",
+      "destination": "DEL",
+      "label": "Bengaluru to New Delhi",
+      "fromFare": 5290,
+      "searchCountLabel": "Popular domestic route"
+    },
+    {
+      "id": "blr-sin",
+      "origin": "BLR",
+      "destination": "SIN",
+      "label": "Bengaluru to Singapore",
+      "fromFare": 14500,
+      "searchCountLabel": "Popular international route"
+    },
+    {
+      "id": "blr-goi",
+      "origin": "BLR",
+      "destination": "GOI",
+      "label": "Bengaluru to Goa",
+      "fromFare": 3890,
+      "searchCountLabel": "Weekend favourite"
+    },
+    {
+      "id": "pat-del",
+      "origin": "PAT",
+      "destination": "DEL",
+      "label": "Patna to New Delhi",
+      "fromFare": 6420,
+      "searchCountLabel": "Popular domestic route"
+    }
+  ]
+}

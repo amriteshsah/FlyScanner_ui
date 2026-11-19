@@ -1,0 +1,73 @@
+{
+  "dataset": "destinations",
+  "version": 1,
+  "description": "Explore destination sample content.",
+  "items": [
+    {
+      "id": "dubai",
+      "city": "Dubai",
+      "country": "United Arab Emirates",
+      "airportCode": "DXB",
+      "tagline": "Desert days, city nights",
+      "fromAirport": "BLR",
+      "indicativeFare": 12480,
+      "category": "City escape",
+      "imageKey": "desert-city"
+    },
+    {
+      "id": "singapore",
+      "city": "Singapore",
+      "country": "Singapore",
+      "airportCode": "SIN",
+      "tagline": "A little island, a lot to explore",
+      "fromAirport": "BLR",
+      "indicativeFare": 14500,
+      "category": "Culture & food",
+      "imageKey": "garden-city"
+    },
+    {
+      "id": "london",
+      "city": "London",
+      "country": "United Kingdom",
+      "airportCode": "LHR",
+      "tagline": "History around every corner",
+      "fromAirport": "BLR",
+      "indicativeFare": 36800,
+      "category": "Big city",
+      "imageKey": "city-break"
+    },
+    {
+      "id": "goa",
+      "city": "Goa",
+      "country": "India",
+      "airportCode": "GOI",
+      "tagline": "Slow mornings by the sea",
+      "fromAirport": "BLR",
+      "indicativeFare": 3890,
+      "category": "Beach break",
+      "imageKey": "coast"
+    },
+    {
+      "id": "bangkok",
+      "city": "Bangkok",
+      "country": "Thailand",
+      "airportCode": "BKK",
+      "tagline": "Street food and bright nights",
+      "fromAirport": "MAA",
+      "indicativeFare": 11200,
+      "category": "Food & culture",
+      "imageKey": "night-market"
+    },
+    {
+      "id": "paris",
+      "city": "Paris",
+      "country": "France",
+      "airportCode": "CDG",
+      "tagline": "Make room for a little romance",
+      "fromAirport": "DEL",
+      "indicativeFare": 32900,
+      "category": "City escape",
+      "imageKey": "europe"
+    }
+  ]
+}

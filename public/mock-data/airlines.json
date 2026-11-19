@@ -1,0 +1,67 @@
+{
+  "dataset": "airlines",
+  "version": 1,
+  "description": "Airline reference data used to enrich flight offers.",
+  "items": [
+    {
+      "code": "6E",
+      "name": "IndiGo",
+      "country": "India",
+      "alliance": null
+    },
+    {
+      "code": "IX",
+      "name": "Air India Express",
+      "country": "India",
+      "alliance": null
+    },
+    {
+      "code": "AI",
+      "name": "Air India",
+      "country": "India",
+      "alliance": "Star Alliance"
+    },
+    {
+      "code": "EK",
+      "name": "Emirates",
+      "country": "United Arab Emirates",
+      "alliance": null
+    },
+    {
+      "code": "SQ",
+      "name": "Singapore Airlines",
+      "country": "Singapore",
+      "alliance": "Star Alliance"
+    },
+    {
+      "code": "QR",
+      "name": "Qatar Airways",
+      "country": "Qatar",
+      "alliance": "oneworld"
+    },
+    {
+      "code": "BA",
+      "name": "British Airways",
+      "country": "United Kingdom",
+      "alliance": "oneworld"
+    },
+    {
+      "code": "TG",
+      "name": "Thai Airways",
+      "country": "Thailand",
+      "alliance": "Star Alliance"
+    },
+    {
+      "code": "MH",
+      "name": "Malaysia Airlines",
+      "country": "Malaysia",
+      "alliance": "oneworld"
+    },
+    {
+      "code": "LH",
+      "name": "Lufthansa",
+      "country": "Germany",
+      "alliance": "Star Alliance"
+    }
+  ]
+}
